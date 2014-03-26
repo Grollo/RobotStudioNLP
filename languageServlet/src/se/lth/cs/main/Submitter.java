@@ -25,61 +25,58 @@ import se.lth.cs.semparser.corpus.Sentence;
 import se.lth.cs.semparser.corpus.Word;
 
 /**
- *
+ * 
  * @author pierre
  */
-@WebServlet(name = "Submitter", urlPatterns = {"/badaboum"})
+@WebServlet(name = "Submitter", urlPatterns = { "/badaboum" })
 public class Submitter extends HttpServlet {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    public List<String> sentenceDetector(String narrative) {
-        String[] sentences = narrative.split("\\.");
-        return Arrays.asList(sentences);
-    }
+	public List<String> sentenceDetector(String narrative) {
+		String[] sentences = narrative.split("\\.");
+		return Arrays.asList(sentences);
+	}
 
-    
-    public String process(String narrative) throws UnsupportedEncodingException {
-        // Here the semantic processing
-        narrative = URLDecoder.decode(narrative, "UTF-8");
-        narrative = narrative.replaceAll("!", ".");
-        
-        List<String> sentences = sentenceDetector(narrative);
-        SemanticSubmitter semSubmitter = new SemanticSubmitter();
-      
-        List<Sentence> parsedSentences = new ArrayList<Sentence>();
-      //  SemanticSubmitter semSubmitter = new SemanticSubmitter();
+	public String process(String narrative) throws UnsupportedEncodingException {
+		// Here the semantic processing
+		narrative = URLDecoder.decode(narrative, "UTF-8");
+		narrative = narrative.replaceAll("!", ".");
 
-        for (String sentence : sentences) {
-            String parsedOutput = semSubmitter.processSentence(sentence);
-            parsedSentences.add(new Sentence(parsedOutput));
-        }
-      
-        for (Sentence parsedSentence : parsedSentences) {
-            // sanity check?
-        }
-        
-        return "";
-    }
+		List<String> sentences = sentenceDetector(narrative);
+		SemanticSubmitter semSubmitter = new SemanticSubmitter();
 
-  
-    @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException, UnsupportedEncodingException {
-        response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
+		List<Sentence> parsedSentences = new ArrayList<Sentence>();
+		// SemanticSubmitter semSubmitter = new SemanticSubmitter();
 
-        // The semantic server processes only one parameter: text
-       // System.out.println("sfkhfksl");
-       // out.println("fdsfksdfhksdfhkjshfjkshdfkjshd");
-        String text = request.getParameter("text");
-        if (text != null) {
-        //	out.println(text);
-            
-            out.println(process(text));
-        } else {
-            out.println("No text");
-        }
-        out.close();
-    }
+		for (String sentence : sentences) {
+			String parsedOutput = semSubmitter.processSentence(sentence);
+			parsedSentences.add(new Sentence(parsedOutput));
+		}
+
+		for (Sentence parsedSentence : parsedSentences) {
+			// sanity check?
+		}
+
+		return "";
+	}
+
+	@Override
+	public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException, UnsupportedEncodingException {
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
+
+		// The semantic server processes only one parameter: text
+		// System.out.println("sfkhfksl");
+		// out.println("fdsfksdfhksdfhkjshfjkshdfkjshd");
+		String text = request.getParameter("text");
+		if (text != null) {
+			// out.println(text);
+
+			out.println(process(text));
+		} else {
+			out.println("No text");
+		}
+		out.close();
+	}
 }
