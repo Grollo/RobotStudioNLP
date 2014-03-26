@@ -1,6 +1,7 @@
 package sceneParser;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Item {
 	int id;
@@ -9,7 +10,7 @@ public class Item {
 	float rotation;
 	float scale;
 	String colour;
-	ArrayList<String> names;
+	List<String> names;
 	
 	public Item(int id, String model){
 		this.id = id;
