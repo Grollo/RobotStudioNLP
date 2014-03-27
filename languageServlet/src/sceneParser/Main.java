@@ -5,9 +5,13 @@ import se.lth.cs.semparser.corpus.Sentence;
 
 public class Main {
 
-	public static ArrayList<String> interpret(Sentence parsedSentence) {
-		ArrayList<String> commands = new ArrayList<String>();
-		commands.add(parsedSentence.toString());
+	public static ArrayList<Command> interpret(Sentence parsedSentence) {
+		ArrayList<Command> commands = new ArrayList<Command>();
+		
+		if(parsedSentence.contains("Undo")){
+			//TODO
+		}
+		
 		return commands;
 	}
 	
