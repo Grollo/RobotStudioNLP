@@ -16,19 +16,33 @@ public class Main {
 		return commands;
 	}
 
-	private static boolean incorrectGrammar(Sentence parsedSentence) { // TODO: check if root is a verb (probably)
+	private static boolean incorrectGrammar(Sentence parsedSentence) { 
 		return false;
 	}
 	
-	private static int[] possibleItems(String noun){ // given an noun, returns list of ids of items the name could be referring to
+	/**
+	 * @param noun
+	 * @return list of ids of items the noun could be referring to
+	 */
+	private static int[] possibleItems(String noun){ 
 		return new int[] {}; //TODO
 	}
 	
-	private static int[] namedItemsWithName(String name){ // returns ids of all items that have a certain name
+	/**
+	 * @param name
+	 * @return ids of all items that have the name
+	 */
+	private static int[] namedItemsWithName(String name){
 		return new int[] {}; //TODO
 	}
 	
-	private static int[] filterByProperty(int[] ids, String attribute, String value){ // returns items that fit some property
+	/**
+	 * @param ids
+	 * @param attribute
+	 * @param value
+	 * @return sublist of items that fit the property
+	 */
+	private static int[] filterByProperty(int[] ids, String attribute, String value){
 		return new int[] {}; //TODO
 	}
 	
