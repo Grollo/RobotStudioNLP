@@ -18,7 +18,7 @@ public class NeoDatabase {
 	public boolean addModel(String alias, String filename){
 		Node node = db.createNode(DynamicLabel.label(alias));
 //		node.createRelationshipTo(db.createNode(DynamicLabel.label(filename)), a)
-		//TODO implement
+		//TODO implement blub
 		return false;
 	}
 	
