@@ -1,23 +1,41 @@
-package sceneParser;
+package neo4j;
 
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
+
+import sceneParser.Item;
 
 public class NeoDatabase {
 
 	GraphDatabaseService db;
 	
-//	/**Adds a new itemType to the database.
-//	 * @return <code>true</code> if the itemType was added to the database. Else returns <code>false</code>.*/
-//	public boolean addItemType(){
-//		//TODO implement
-//		return false;
-//	}
+	/**Adds a new model to the database.
+	 * @return <code>true</code> if the model was added to the database. Else returns <code>false</code>.*/
+	public boolean addModel(String alias, String filename){
+		Node node = db.createNode(DynamicLabel.label(alias));
+//		node.createRelationshipTo(db.createNode(DynamicLabel.label(filename)), a)
+		//TODO implement
+		return false;
+	}
 	
 	/**Creates a new item in the database.
 	 * @param itemType - the Type of item to be created.
 	 * @return <code>true</code> if a item was created. Else returns <code>false</code>.*/
-	public boolean createItem(){
+	public boolean createItem(String model){
+		Node node = db.createNode();
+		Index<Node> modelIndex = db.index().forNodes("model");
+		IndexHits<Node> hits = modelIndex.query("Id", model);
+		if(hits.size() < 1){
+			return false;
+		}
+		if(hits.size() > 1){
+			return false;
+		}
+		
 		//TODO implement
 		return false;
 	}
