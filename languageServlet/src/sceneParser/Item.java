@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Item {
-	int id;
-	String model;
-	Position position;
-	float rotation;
-	float scale;
-	String colour;
-	List<String> names;
+	public int id;
+	public String model;
+	public Position position;
+	public float rotation;
+	public float scale;
+	public String colour;
+	public List<String> names;
 	
 	public Item(int id, String model){
 		this.id = id;
