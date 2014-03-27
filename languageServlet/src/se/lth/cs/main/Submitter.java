@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import sceneParser.Main;
 import se.lth.cs.semantics.PredArgs;
 import se.lth.cs.semantics.SemanticSubmitter;
 import se.lth.cs.semparser.corpus.Predicate;
@@ -53,12 +54,16 @@ public class Submitter extends HttpServlet {
 			String parsedOutput = semSubmitter.processSentence(sentence);
 			parsedSentences.add(new Sentence(parsedOutput));
 		}
-
+		
+		StringBuilder sb = new StringBuilder();
 		for (Sentence parsedSentence : parsedSentences) {
 			// sanity check?
+			ArrayList<String> commands = Main.interpret(parsedSentence);
+			for(String command : commands)
+				sb.append(command + "\n");
 		}
-
-		return "";
+		
+		return sb.toString();
 	}
 
 	@Override
