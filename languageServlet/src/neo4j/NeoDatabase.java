@@ -1,5 +1,7 @@
 package neo4j;
 
+import java.util.List;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
@@ -7,6 +9,7 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 
 import sceneParser.Item;
+import sceneParser.Item.Position;
 
 public class NeoDatabase {
 	
@@ -55,16 +58,30 @@ public class NeoDatabase {
 	 * @param itemType - the Type of item to be created.
 	 * @return <code>true</code> if a item was created. Else returns <code>false</code>.
 	 */
-	public boolean createItem(String model) {
+	public boolean createItem(Item item) {
 		Node node = db.createNode();
 		Index<Node> modelIndex = db.index().forNodes("model");
-		IndexHits<Node> hits = modelIndex.query("Id", model);
+		IndexHits<Node> hits = modelIndex.query("alias", item.model);
 		if (hits.size() != 1) {
 			return false;
 		}
-
-		// TODO implement
-		return false;
+		node.setProperty("id", item.id);
+		node.createRelationshipTo(hits.getSingle(), ItemRelationships.MODEL);
+		node.setProperty("position x", item.position.x);
+		node.setProperty("position y", item.position.y);
+		node.setProperty("position z", item.position.z);
+		node.setProperty("rotation", item.rotation);
+		node.setProperty("scale", item.scale);
+		node.setProperty("color", item.color);
+		
+		for (String name : item.names) {
+			IndexHits<Node> names = db.index().forNodes(NodeType.Word.toString()).get("word", name);
+			if (names.size() != 1) {
+				return false;
+			}
+			names.getSingle().createRelationshipTo(node, ItemRelationships.NAME);
+		}
+		return true;
 	}
 
 	/** Removes an existing item from the database.
@@ -73,7 +90,7 @@ public class NeoDatabase {
 	 * @return <code>true</code> if the item was removed. Else returns <code>false</code>.
 	 */
 	public boolean removeItem(Item item) {
-		IndexHits<Node> items = db.index().forNodes(NodeType.Item.toString()).get("Id", item.id);
+		IndexHits<Node> items = db.index().forNodes(NodeType.Item.toString()).get("id", item.id);
 		if (items.size() != 1 || items.size() != 1) {
 			return false;
 		}

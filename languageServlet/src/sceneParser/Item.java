@@ -9,7 +9,7 @@ public class Item {
 	public Position position;
 	public float rotation;
 	public float scale;
-	public String colour;
+	public String color;
 	public List<String> names;
 	
 	public Item(int id, String model){
@@ -18,14 +18,14 @@ public class Item {
 		position = new Position(0, 0, 0);
 		rotation = 0;
 		scale = 1;
-		colour = null;
+		color = null;
 		names = new ArrayList<String>();
 	}
 	
-	class Position{
-		float x;
-		float y;
-		float z;
+	public class Position{
+		public float x;
+		public float y;
+		public float z;
 		
 		public Position(float x, float y, float z){
 			this.x = x;
