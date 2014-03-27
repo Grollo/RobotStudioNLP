@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import sceneParser.Command;
 import sceneParser.Main;
 import se.lth.cs.semantics.PredArgs;
 import se.lth.cs.semantics.SemanticSubmitter;
@@ -58,8 +59,8 @@ public class Submitter extends HttpServlet {
 		StringBuilder sb = new StringBuilder();
 		for (Sentence parsedSentence : parsedSentences) {
 			// sanity check?
-			ArrayList<String> commands = Main.interpret(parsedSentence);
-			for(String command : commands)
+			ArrayList<Command> commands = Main.interpret(parsedSentence);
+			for(Command command : commands)
 				sb.append(command + "\n");
 		}
 		
