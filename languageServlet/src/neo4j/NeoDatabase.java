@@ -1,7 +1,10 @@
 package neo4j;
 
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
@@ -16,6 +19,7 @@ public class NeoDatabase implements Database{
 		Node node = db.createNode(NodeType.Verb);
 		node.setProperty("word", verb);
 		node.setProperty("does", cmd);
+		db.index().forNodes(NodeType.Verb.toString()).add(node, "word", verb);
 		return true;
 	}
 
@@ -32,6 +36,7 @@ public class NeoDatabase implements Database{
 		Node node = db.createNode(NodeType.Adjective);
 		node.setProperty("word", adjective);
 		node.setProperty("property", property);
+		db.index().forNodes(NodeType.Adjective.toString()).add(node, "word", adjective);
 		return true;
 	}
 
@@ -39,12 +44,14 @@ public class NeoDatabase implements Database{
 		Node node = db.createNode(NodeType.Model);
 		node.setProperty("alias", alias);
 		node.setProperty("filename", filename);
+		db.index().forNodes(NodeType.Model.toString()).add(node, "alias", alias);
 		return true;
 	}
 
 	public boolean addNoun(String noun) {
 		Node node = db.createNode(NodeType.Noun);
-		node.setProperty(NodeType.Noun.toString(), noun);
+		node.setProperty("word", noun);
+		db.index().forNodes(NodeType.Noun.toString()).add(node, "word", noun);
 		return true;
 	}
 
@@ -73,6 +80,7 @@ public class NeoDatabase implements Database{
 		node.setProperty("rotation", item.rotation);
 		node.setProperty("scale", item.scale);
 		node.setProperty("color", item.color);
+		db.index().forNodes(NodeType.Item.toString()).add(node, "id", item.id);
 		
 		for (String name : item.names) {
 			IndexHits<Node> names = db.index().forNodes(NodeType.Noun.toString()).get(NodeType.Noun.toString(), name);
@@ -90,8 +98,13 @@ public class NeoDatabase implements Database{
 		if (items.size() != 1 || items.size() != 1) {
 			return false;
 		}
-		items.getSingle().delete();
-		return false;
+		Node node = items.getSingle();
+		db.index().forNodes(NodeType.Item.toString()).remove(node);
+		for (Relationship r : node.getRelationships()) {
+			r.delete();
+		}
+		node.delete();
+		return true;
 	}
 
 	public boolean modifyItem(Item item, String attribute, String value) {
@@ -101,24 +114,42 @@ public class NeoDatabase implements Database{
 	
 	public Item[] getItems(String name) {
 		Index<Node> index = db.index().forNodes(NodeType.Noun.toString());
-		IndexHits<Node> items = index.query("MATCH {word:'"+name+"'}-[:NAME]->(r)");
-		//TODO
-		return null;
+		IndexHits<Node> items = index.query("MATCH ({word:'"+name+"'}-[:NAME]->(r)) RETURN r;");
+		Item[] result = new Item[items.size()];
+		int i = 0;
+		for (Node node : items) {
+			result[i++] = getItem(node);
+		}
+		return result;
+	}
+	
+	private Item getItem(Node node){
+		int id = (int) node.getProperty("id");
+		String model = (String) node.getSingleRelationship(ItemRelationships.MODEL, Direction.OUTGOING)
+				.getEndNode().getProperty("alias");
+		Item item = new Item(id, model);
+		return item;
 	}
 
 	public String[] getModels(String name) {
-		// TODO Auto-generated method stub
-		return null;
+		Index<Node> index = db.index().forNodes(NodeType.Noun.toString());
+		IndexHits<Node> items = index.query("MATCH ({word:'"+name+"'}-[:MEANS]->(r)) RETURN r;");
+		String[] result = new String[items.size()];
+		int i = 0;
+		for (Node node : items) {
+			result[i++] = (String) node.getProperty("alias");
+		}
+		return result;
 	}
 
-	public String getAdjective(String Adjective) {
-		// TODO Auto-generated method stub
-		return null;
+	public String getAdjective(String adjective) {
+		Node node = db.index().forNodes(NodeType.Adjective.toString()).get("word", adjective).getSingle();
+		return (String) node.getProperty("property");
 	}
 
 	public Object getVerb(String verb) {
-		// TODO Auto-generated method stub
-		return null;
+		Node node = db.index().forNodes(NodeType.Verb.toString()).get("word", verb).getSingle();
+		return (String) node.getProperty("does");
 	}
 
 	public boolean connect(String urlPath) {
@@ -134,10 +165,18 @@ public class NeoDatabase implements Database{
 			db = null;
 		}
 	}
+	
+	/*Run to add indexes to database. Only needed when initializing database.*/
+	private void init(){
+		db.schema().indexFor(NodeType.Adjective).create();
+		db.schema().indexFor(NodeType.Verb).create();
+		db.schema().indexFor(NodeType.Noun).create();
+		db.schema().indexFor(NodeType.Model).create();
+		db.schema().indexFor(NodeType.Item).create();
+	}
 
 	private static void registerShutdownHook(final GraphDatabaseService db) {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
 			public void run() {
 				db.shutdown();
 			}
