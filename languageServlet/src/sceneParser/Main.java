@@ -14,9 +14,12 @@ public class Main {
 	private final static Command grammarError = Command.notify("I don't understand your grammar, can you please rephrase that?");
 	private final static Command noItemFound = Command.notify("Could not find an item matching the description.");
 	private final static Command tooManyItemsFound = Command.notify("Could apply to more than one item, please specify.");
+	private final static Command noIModelFound = Command.notify("Could not find an model matching the description.");
+	private final static Command tooManyModels = Command.notify("Could apply to more than one model, please specify.");
 	private final static String noSuchObject = "Couldn't find an object named ";
 	private int activeAgentId = -1; // id of last referred to object, -1 if no such thing
 	private static NeoDatabase database = new NeoDatabase();
+	private static int nextId = 0;
 
 	public static ArrayList<Command> interpret(Sentence parsedSentence) {
 		ArrayList<Command> commands = new ArrayList<Command>();
@@ -44,14 +47,30 @@ public class Main {
 	}
 
 	private static Command makeCreate(Map<String, String> verb, Predicate rootPredicate) {
-		// TODO Auto-generated method stub
-		return null;
+		String itemToMakeArgument = verb.get("item");
+		Set<Word> words = rootPredicate.getArgMap().keySet();
+		Word itemDescription = null;
+		for(Word word : words){
+			if(rootPredicate.getArgMap().get(word).equals(itemToMakeArgument))
+				itemDescription = word;
+		}
+		String[] possibleModels = appropriateModel(itemDescription);
+		if(possibleModels.length == 0)
+			return noModelFound;
+		if(possibleModels.length > 1)
+			return tooManyModels;
+		return Command.create(getNextId(), possibleModels[0]);
+	}
+
+	private static int getNextId() {
+		nextId++;
+		return nextId++;
 	}
 
 	private static Command makeRemove(Map<String, String> verb, Predicate rootPredicate) {
 		String affectedItemArgument = verb.get("item");
 		Set<Word> words = rootPredicate.getArgMap().keySet();
-		Word itemDescription = null;;
+		Word itemDescription = null;
 		for(Word word : words){
 			if(rootPredicate.getArgMap().get(word).equals(affectedItemArgument))
 				itemDescription = word;
@@ -90,6 +109,17 @@ public class Main {
 
 	private static boolean incorrectGrammar(Sentence parsedSentence) {
 		return false; // TODO
+	}
+
+	/**
+	 * given a description of an item, find a model in the database that fits
+	 * if no fitting model is found, return null
+	 * @param itemDescription
+	 * @return
+	 */
+	private static String[] appropriateModel(Word itemDescription) { //implementing a simple version that only checks one word, expand later
+		String name = itemDescription.getLemma();
+		return database.getModels(name);
 	}
 	
 	/**
