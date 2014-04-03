@@ -2,16 +2,34 @@ package neo4j;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.RelationshipType;
-
 import sceneParser.Item;
 
 public interface Database {
 
-	public boolean addVerb(String verb, String cmd);
+	/** Adds a verb to the database.
+	 * 
+	 * @param verb - the verb to be added.
+	 * @param action - the action connected to this verb.
+	 * @return <code>true</code> if the verb was added to the database. Else returns <code>false</code>.
+	 */
+	public boolean addVerb(String verb, String action);
 	
+	/**Adds a argument to a verb.
+	 * 
+	 * @param verb - the verb itself.
+	 * @param argument
+	 * @param reference - reference to be mapped to argument.
+	 * @return <code>true</code> if the database change was successful. Else returns <code>false</code>.
+	 */
 	public boolean addArgument(String verb, String argument, String reference);
 	
+	/** Adds a adjective to the database.
+	 * 
+	 * @param adjective - the adjective to be added.
+	 * @param property - the property of this adjective.
+	 * @param value - the value of this adjective.
+	 * @return <code>true</code> if the adjective was added to the database. Else returns <code>false</code>.
+	 */
 	public boolean addAdjective(String adjective, String property, String value);
 	
 	/** Adds a new model to the database.
@@ -59,20 +77,37 @@ public interface Database {
 	 */
 	public boolean modifyItem(Item item, String attribute, String value);
 	
+	/** Gets items from the database.
+	 * 
+	 * @param name - a reference to a item.
+	 * @return a Array of all items the name referred to.
+	 */
 	public Item[] getItems(String name);
 	
+	/** Gets models from the database.
+	 * 
+	 * @param name - a reference to a model.
+	 * @return a Array of all models the name referred to.
+	 */
 	public String[] getModels(String name);
 	
-	public String[] getAdjective(String Adjective);
+	/** Gets a Adjective from the database.
+	 * 
+	 * @param adjective - the adjective itself.
+	 * @return a Array where the first argument is the property and the second is the value.
+	 */
+	public String[] getAdjective(String adjective);
 	
+	/**Gets a verb from the database.
+	 * @param verb - the verb itself.
+	 * @return a map of all arguments mapped to its corresponding reference.*/
 	public Map<String, String> getVerb(String verb);
 	
 	/** Connects to the specified Neo4j-server.
 	 * 
 	 * @param urlPath - The URL of the Neo4j-server.
-	 * 
 	 * @return <code>true</code> if connection was established. Else returns <code>false</code>.
-	 */
+	 * /
 	public boolean connect(String urlPath);
 	
 	/** Closes the connection to the Neo4j-database, */
