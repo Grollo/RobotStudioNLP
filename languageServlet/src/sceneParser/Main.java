@@ -14,7 +14,7 @@ public class Main {
 	private final static Command grammarError = Command.notify("I don't understand your grammar, can you please rephrase that?");
 	private final static Command noItemFound = Command.notify("Could not find an item matching the description.");
 	private final static Command tooManyItemsFound = Command.notify("Could apply to more than one item, please specify.");
-	private final static Command noIModelFound = Command.notify("Could not find an model matching the description.");
+	private final static Command noModelFound = Command.notify("Could not find an model matching the description.");
 	private final static Command tooManyModels = Command.notify("Could apply to more than one model, please specify.");
 	private final static String noSuchObject = "Couldn't find an object named ";
 	private int activeAgentId = -1; // id of last referred to object, -1 if no such thing
