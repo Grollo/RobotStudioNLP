@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Item {
+	public static final String[] attributeNames = {"id", "model", "position x", "position y", "position z",
+		"rotation", "scale", "color"};
+	
 	public int id;
 	public String model;
 	public Position position;

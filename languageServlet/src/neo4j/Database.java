@@ -1,14 +1,16 @@
 package neo4j;
 
+import org.neo4j.graphdb.RelationshipType;
+
 import sceneParser.Item;
 
 public interface Database {
 
 	public boolean addVerb(String verb, String cmd);
 	
-	public boolean addArgument(String Verb, int argument, String reference);
+	public boolean addArgument(String verb, String argument, String reference);
 	
-	public boolean addAdjective(String adjective, String property);
+	public boolean addAdjective(String adjective, String property, String value);
 	
 	/** Adds a new model to the database.
 	 * 
@@ -59,7 +61,7 @@ public interface Database {
 	
 	public String[] getModels(String name);
 	
-	public String getAdjective(String Adjective);
+	public String[] getAdjective(String Adjective);
 	
 	public Object getVerb(String verb);
 	

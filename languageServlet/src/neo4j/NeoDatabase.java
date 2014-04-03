@@ -1,10 +1,14 @@
 package neo4j;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
@@ -12,6 +16,18 @@ import org.neo4j.rest.graphdb.RestGraphDatabase;
 import sceneParser.Item;
 
 public class NeoDatabase implements Database{
+	
+	public enum ItemRelationships implements RelationshipType {
+		MODEL, NAME
+	}
+	
+	public enum ModelRelationships implements RelationshipType {
+		MEANS
+	}
+	
+	public enum NodeType implements Label{
+		Model, Item, Noun, Verb, Adjective
+	}
 	
 	GraphDatabaseService db;
 	
@@ -23,19 +39,20 @@ public class NeoDatabase implements Database{
 		return true;
 	}
 
-	public boolean addArgument(String verb, int argument, String reference) {
+	public boolean addArgument(String verb, String argument, String reference) {
 		IndexHits<Node> words = db.index().forNodes(NodeType.Verb.toString()).get("word", verb);
 		if (words.size() != 1) {
 			return false;
 		}
-		words.getSingle().setProperty("A"+argument, reference);
-		return false;
+		words.getSingle().setProperty(argument, reference);
+		return true;
 	}
 	
-	public boolean addAdjective(String adjective, String property){
+	public boolean addAdjective(String adjective, String property, String value){
 		Node node = db.createNode(NodeType.Adjective);
 		node.setProperty("word", adjective);
 		node.setProperty("property", property);
+		node.setProperty("value", value);
 		db.index().forNodes(NodeType.Adjective.toString()).add(node, "word", adjective);
 		return true;
 	}
@@ -108,8 +125,27 @@ public class NeoDatabase implements Database{
 	}
 
 	public boolean modifyItem(Item item, String attribute, String value) {
-		//TODO implement
-		return false;
+		IndexHits<Node> items = db.index().forNodes(NodeType.Item.toString()).get("id", item.id);
+		if (items.size() != 1 || items.size() != 1) {
+			return false;
+		}
+		Node node = items.getSingle();
+		if(attribute.equals(Item.attributeNames)){
+			db.index().forNodes(NodeType.Item.toString()).remove(node);
+			for (Relationship r : node.getRelationships(ItemRelationships.MODEL)) {
+				r.delete();
+			}
+			
+			Index<Node> modelIndex = db.index().forNodes(NodeType.Model.toString());
+			IndexHits<Node> hits = modelIndex.query("alias", item.model);
+			if (hits.size() != 1) {
+				return false;
+			}
+			node.createRelationshipTo(hits.getSingle(), ItemRelationships.MODEL);
+		}else{
+			node.setProperty(attribute, value);
+		}
+		return true;
 	}
 	
 	public Item[] getItems(String name) {
@@ -142,14 +178,18 @@ public class NeoDatabase implements Database{
 		return result;
 	}
 
-	public String getAdjective(String adjective) {
+	public String[] getAdjective(String adjective) {
 		Node node = db.index().forNodes(NodeType.Adjective.toString()).get("word", adjective).getSingle();
-		return (String) node.getProperty("property");
+		return new String[]{(String) node.getProperty("property"), (String) node.getProperty("value")};
 	}
 
 	public Object getVerb(String verb) {
 		Node node = db.index().forNodes(NodeType.Verb.toString()).get("word", verb).getSingle();
-		return (String) node.getProperty("does");
+		Map<String, String> map = new HashMap<String, String>();
+		for (String key : node.getPropertyKeys()) {
+			map.put(key, (String) node.getProperty(key));
+		}
+		return map;
 	}
 
 	public boolean connect(String urlPath) {
