@@ -1,5 +1,7 @@
 package neo4j;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.RelationshipType;
 
 import sceneParser.Item;
@@ -63,7 +65,7 @@ public interface Database {
 	
 	public String[] getAdjective(String Adjective);
 	
-	public Object getVerb(String verb);
+	public Map<String, String> getVerb(String verb);
 	
 	/** Connects to the specified Neo4j-server.
 	 * 
