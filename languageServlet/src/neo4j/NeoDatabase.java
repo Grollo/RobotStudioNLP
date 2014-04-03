@@ -1,50 +1,62 @@
 package neo4j;
 
-import java.util.List;
-
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 
 import sceneParser.Item;
-import sceneParser.Item.Position;
 
-public class NeoDatabase {
+public class NeoDatabase implements Database{
 	
 	GraphDatabaseService db;
+	
+	public boolean addVerb(String verb, String cmd){
+		Node node = db.createNode(NodeType.Verb);
+		node.setProperty("word", verb);
+		node.setProperty("does", cmd);
+		db.index().forNodes(NodeType.Verb.toString()).add(node, "word", verb);
+		return true;
+	}
 
-	/** Adds a new model to the database.
-	 * 
-	 * @return <code>true</code> if the model was added to the database. Else returns <code>false</code>.
-	 */
+	public boolean addArgument(String verb, int argument, String reference) {
+		IndexHits<Node> words = db.index().forNodes(NodeType.Verb.toString()).get("word", verb);
+		if (words.size() != 1) {
+			return false;
+		}
+		words.getSingle().setProperty("A"+argument, reference);
+		return false;
+	}
+	
+	public boolean addAdjective(String adjective, String property){
+		Node node = db.createNode(NodeType.Adjective);
+		node.setProperty("word", adjective);
+		node.setProperty("property", property);
+		db.index().forNodes(NodeType.Adjective.toString()).add(node, "word", adjective);
+		return true;
+	}
+
 	public boolean addModel(String alias, String filename) {
 		Node node = db.createNode(NodeType.Model);
 		node.setProperty("alias", alias);
 		node.setProperty("filename", filename);
+		db.index().forNodes(NodeType.Model.toString()).add(node, "alias", alias);
 		return true;
 	}
 
-	/** Adds a new word to the database.
-	 * 
-	 * @return <code>true</code> if the word was added to the database. Else returns <code>false</code>.
-	 */
-	public boolean addWord(String word) {
-		Node node = db.createNode(NodeType.Word);
-		node.setProperty("word", word);
+	public boolean addNoun(String noun) {
+		Node node = db.createNode(NodeType.Noun);
+		node.setProperty("word", noun);
+		db.index().forNodes(NodeType.Noun.toString()).add(node, "word", noun);
 		return true;
 	}
 
-	/** Adds a relationship between a word and a model.
-	 * 
-	 * @param word - the word to be linked.
-	 * @param model - the alias of the model to be linked.
-	 * @return <code>false</code> if the word or the model isn't uniquely identifiable.
-	 * 		Else returns <code>true</code>.
-	 */
 	public boolean linkModel(String word, String model) {
-		IndexHits<Node> words = db.index().forNodes(NodeType.Word.toString()).get("word", word);
+		IndexHits<Node> words = db.index().forNodes(NodeType.Noun.toString()).get("model", word);
 		IndexHits<Node> models = db.index().forNodes(NodeType.Model.toString()).get("alias", model);
 		if (words.size() != 1 || models.size() != 1) {
 			return false;
@@ -53,14 +65,9 @@ public class NeoDatabase {
 		return true;
 	}
 
-	/** Creates a new item in the database.
-	 * 
-	 * @param itemType - the Type of item to be created.
-	 * @return <code>true</code> if a item was created. Else returns <code>false</code>.
-	 */
 	public boolean createItem(Item item) {
 		Node node = db.createNode();
-		Index<Node> modelIndex = db.index().forNodes("model");
+		Index<Node> modelIndex = db.index().forNodes(NodeType.Model.toString());
 		IndexHits<Node> hits = modelIndex.query("alias", item.model);
 		if (hits.size() != 1) {
 			return false;
@@ -73,52 +80,78 @@ public class NeoDatabase {
 		node.setProperty("rotation", item.rotation);
 		node.setProperty("scale", item.scale);
 		node.setProperty("color", item.color);
+		db.index().forNodes(NodeType.Item.toString()).add(node, "id", item.id);
 		
 		for (String name : item.names) {
-			IndexHits<Node> names = db.index().forNodes(NodeType.Word.toString()).get("word", name);
+			IndexHits<Node> names = db.index().forNodes(NodeType.Noun.toString()).get(NodeType.Noun.toString(), name);
 			if (names.size() != 1) {
 				return false;
 			}
 			names.getSingle().createRelationshipTo(node, ItemRelationships.NAME);
+			names.close();
 		}
 		return true;
 	}
 
-	/** Removes an existing item from the database.
-	 * 
-	 * @param item - the item to be removed.
-	 * @return <code>true</code> if the item was removed. Else returns <code>false</code>.
-	 */
 	public boolean removeItem(Item item) {
 		IndexHits<Node> items = db.index().forNodes(NodeType.Item.toString()).get("id", item.id);
 		if (items.size() != 1 || items.size() != 1) {
 			return false;
 		}
-		items.getSingle().delete();
-		return false;
+		Node node = items.getSingle();
+		db.index().forNodes(NodeType.Item.toString()).remove(node);
+		for (Relationship r : node.getRelationships()) {
+			r.delete();
+		}
+		node.delete();
+		return true;
 	}
 
-	/** Sets the specified attribute of the specified item to the specified
-	 *  value,
-	 * 
-	 * @param item - the item to be modified.
-	 * @param attribute - the attribute to be modified.
-	 * @param value - the value to be assigned.
-	 * @return <code>true</code> if the modification was successful. Else returns <code>false</code>.
-	 */
-	public boolean modifyItem(Item item) {
-		
+	public boolean modifyItem(Item item, String attribute, String value) {
 		//TODO implement
-		
 		return false;
 	}
+	
+	public Item[] getItems(String name) {
+		Index<Node> index = db.index().forNodes(NodeType.Noun.toString());
+		IndexHits<Node> items = index.query("MATCH ({word:'"+name+"'}-[:NAME]->(r)) RETURN r;");
+		Item[] result = new Item[items.size()];
+		int i = 0;
+		for (Node node : items) {
+			result[i++] = getItem(node);
+		}
+		return result;
+	}
+	
+	private Item getItem(Node node){
+		int id = (int) node.getProperty("id");
+		String model = (String) node.getSingleRelationship(ItemRelationships.MODEL, Direction.OUTGOING)
+				.getEndNode().getProperty("alias");
+		Item item = new Item(id, model);
+		return item;
+	}
 
-	/** Connects to the specified Neo4j-server.
-	 * 
-	 * @param urlPath - The URL of the Neo4j-server.
-	 * 
-	 * @return <code>true</code> if connection was established. Else returns <code>false</code>.
-	 */
+	public String[] getModels(String name) {
+		Index<Node> index = db.index().forNodes(NodeType.Noun.toString());
+		IndexHits<Node> items = index.query("MATCH ({word:'"+name+"'}-[:MEANS]->(r)) RETURN r;");
+		String[] result = new String[items.size()];
+		int i = 0;
+		for (Node node : items) {
+			result[i++] = (String) node.getProperty("alias");
+		}
+		return result;
+	}
+
+	public String getAdjective(String adjective) {
+		Node node = db.index().forNodes(NodeType.Adjective.toString()).get("word", adjective).getSingle();
+		return (String) node.getProperty("property");
+	}
+
+	public Object getVerb(String verb) {
+		Node node = db.index().forNodes(NodeType.Verb.toString()).get("word", verb).getSingle();
+		return (String) node.getProperty("does");
+	}
+
 	public boolean connect(String urlPath) {
 		// urlPath = "localhost:7474"
 		db = new RestGraphDatabase(urlPath);
@@ -126,17 +159,24 @@ public class NeoDatabase {
 		return true;
 	}
 
-	/** Closes the connection to the Neo4j-database, */
 	public void disconnect() {
 		if (db != null) {
 			db.shutdown();
 			db = null;
 		}
 	}
+	
+	/*Run to add indexes to database. Only needed when initializing database.*/
+	private void init(){
+		db.schema().indexFor(NodeType.Adjective).create();
+		db.schema().indexFor(NodeType.Verb).create();
+		db.schema().indexFor(NodeType.Noun).create();
+		db.schema().indexFor(NodeType.Model).create();
+		db.schema().indexFor(NodeType.Item).create();
+	}
 
 	private static void registerShutdownHook(final GraphDatabaseService db) {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
 			public void run() {
 				db.shutdown();
 			}
