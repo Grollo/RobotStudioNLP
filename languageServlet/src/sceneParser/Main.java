@@ -1,6 +1,7 @@
 package sceneParser;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -165,6 +166,31 @@ public class Main {
 	 */
 	private static String getModel(String name){
 		return null; //TODO
+	}
+	
+	/**@param t - Should be a empty Array of the same type as <code>a</code> and <code>b</code>.*/
+	private static<T extends Comparable<T>> T[] intersection(T[] a, T[] b, T[] t){
+		List<T> result = new ArrayList<T>();
+		Arrays.sort(a);
+		Arrays.sort(b);
+		
+		int i = 0;
+		int j = 0;
+		while(i < a.length && j < b.length){
+			int c = a[i].compareTo(b[j]);
+			if(c < 0){
+				i++;
+			}else if(c > 0){
+				j++;
+			}else if(a[i].equals(b[j])) {
+				result.add(a[i]);
+			}else{
+				i++;
+				j++;
+			}
+		}
+		
+		return result.toArray(t);
 	}
 
 }
