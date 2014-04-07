@@ -3,7 +3,14 @@ package neo4j;
 import java.util.HashMap;
 import java.util.Map;
 
-import neo4j.Constant.*;
+import neo4j.Constant.Adjective;
+import neo4j.Constant.ItemProperties;
+import neo4j.Constant.ItemRelationships;
+import neo4j.Constant.Model;
+import neo4j.Constant.ModelRelationships;
+import neo4j.Constant.NodeType;
+import neo4j.Constant.Noun;
+import neo4j.Constant.Verb;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -11,16 +18,27 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 
 import sceneParser.Item;
 
 public class NeoDatabase implements Database{
 	
-	GraphDatabaseService db;
+	private GraphDatabaseService db;
 	
-	public NeoDatabase(){
-		
+	private static NeoDatabase database;
+	
+	private NeoDatabase(){
+	}
+	
+	public static void start(String urlPath){
+		database = new NeoDatabase();
+		database.connect(urlPath);
+	}
+	
+	public static NeoDatabase getDatabase(){
+		return database;
 	}
 	
 	public boolean addVerb(String verb, String action){
