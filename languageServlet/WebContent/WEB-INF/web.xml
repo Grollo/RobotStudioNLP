@@ -17,4 +17,7 @@
     <servlet-name>Submitter</servlet-name>
     <url-pattern>/badaboum</url-pattern>
   </servlet-mapping>
+  <listener>
+    <listener-class>se.lth.cs.main.ServerMaker</listener-class>
+  </listener>
 </web-app>
