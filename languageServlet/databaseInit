@@ -1,0 +1,5 @@
+create (n:Model {alias:"irb120"});
+create (n:Noun {word:"robot"});
+MATCH (model:Model) WHERE model.alias = "irb120" MATCH (noun:Noun) WHERE noun.word = "robot" create (noun)-[:MEANS]->(model);
+create (verb:Verb {word:"create"})
+match (verb:Verb {word:"create"}) set verb.does = "create";
