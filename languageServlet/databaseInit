@@ -1,0 +1,17 @@
+#Create node
+#CREATE (n1:NodeType {property1: "value1", property2: "value2"});
+
+#Create relationships
+#MATCH (n1:NodeType) WHERE n1.property = "value"
+#	MATCH (n2:NodeType) WHERE n2.property = "value"
+#	CREATE (n1)-[:REL_TYPE]->(n2);
+
+#Change/Add property
+#SET n1.property = "value"
+
+CREATE (n:Model {alias:"irb120"});
+CREATE (n:Noun {word:"robot"});
+MATCH (model:Model) WHERE model.alias = "irb120"
+	MATCH (noun:Noun) WHERE noun.word = "robot"
+	CREATE (noun)-[:MEANS]->(model);
+CREATE (verb:Verb {word:"create", does:"create"})

@@ -195,7 +195,10 @@ public class NeoDatabase implements Database{
 	}
 
 	public Map<String, String> getVerb(String verb) {
-		Node node = db.index().forNodes(NodeType.Verb.toString()).get(Verb.WORD.toString(), verb).getSingle();
+		IndexManager indexM = db.index();
+		Index<Node> index = indexM.forNodes(NodeType.Verb.toString());
+		IndexHits<Node> hits = index.get(Verb.WORD.toString(), verb);
+		Node node = hits.getSingle();
 		Map<String, String> map = new HashMap<String, String>();
 		for (String key : node.getPropertyKeys()) {
 			map.put(key, (String) node.getProperty(key));
