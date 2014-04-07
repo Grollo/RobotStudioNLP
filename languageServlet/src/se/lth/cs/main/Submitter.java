@@ -18,7 +18,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import neo4j.Test;
 import sceneParser.Command;
 import sceneParser.Main;
 import se.lth.cs.semantics.PredArgs;
@@ -77,7 +76,6 @@ public class Submitter extends HttpServlet {
 		// System.out.println("sfkhfksl");
 		// out.println("fdsfksdfhksdfhkjshfjkshdfkjshd");
 		String text = request.getParameter("text");
-		Test.main(new String[0]);
 		if (text != null) {
 			// out.println(text);
 

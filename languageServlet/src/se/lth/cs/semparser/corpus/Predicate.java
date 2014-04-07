@@ -67,4 +67,8 @@ public class Predicate extends Word {
 	public String toString(){
 		return super.toString()+"\tY\t"+sense;
 	}
+	
+	public boolean isPred(){
+		return true;	
+	}
 }

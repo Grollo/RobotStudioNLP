@@ -93,8 +93,7 @@ public class Word implements Serializable,Comparable<Word>{
 	}
 	
 	public boolean isPred(){
-		return isPred;
-		
+		return false;	
 	}
 	public String getForm() {
 		return Form;
