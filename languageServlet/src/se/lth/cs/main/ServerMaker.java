@@ -14,7 +14,7 @@ public class ServerMaker implements ServletContextListener{
 
 	@Override
 	public void contextInitialized(ServletContextEvent arg0) {
-		NeoDatabase.start("localhost:7474");
+		NeoDatabase.start("http://localhost:7474");
 		System.out.println("Started server correctly! :)");
 	}
 

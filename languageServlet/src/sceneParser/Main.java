@@ -49,7 +49,7 @@ public class Main {
 	}
 
 	private static Command makeCreate(Map<String, String> verb, Predicate rootPredicate) {
-		String itemToMakeArgument = verb.get("item");
+		String itemToMakeArgument = "A1";
 		Set<Word> words = rootPredicate.getArgMap().keySet();
 		Word itemDescription = null;
 		for(Word word : words){
