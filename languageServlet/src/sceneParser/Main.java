@@ -32,7 +32,7 @@ public class Main {
 			} else {
 				Map<String, String> verb = database.getVerb(rootPredicate.getLemma());
 				String commandType = verb.get("does");
-				Command command;
+				Command command = null;
 				switch(commandType){
 				case "create":	command = makeCreate(verb, rootPredicate);
 								break;
@@ -41,6 +41,7 @@ public class Main {
 				case "modify":	command = makeModify(verb, rootPredicate);
 								break;
 				}
+				commands.add(command);
 			}
 		}
 		return commands;
@@ -54,7 +55,7 @@ public class Main {
 			if(rootPredicate.getArgMap().get(word).equals(itemToMakeArgument))
 				itemDescription = word;
 		}
-		String[] possibleModels = appropriateModel(itemDescription);
+		String[] possibleModels = appropriateModels(itemDescription);
 		if(possibleModels.length == 0)
 			return noModelFound;
 		if(possibleModels.length > 1)
@@ -98,6 +99,7 @@ public class Main {
 		bfs.add(w);
 		while(!bfs.isEmpty()){
 			w = bfs.get(0);
+			bfs.remove(0);
 			if(w.isPred())
 				return (Predicate) w;
 			for(Word word : w.getChildren()){
@@ -117,7 +119,7 @@ public class Main {
 	 * @param itemDescription
 	 * @return
 	 */
-	private static String[] appropriateModel(Word itemDescription) { //implementing a simple version that only checks one word, expand later
+	private static String[] appropriateModels(Word itemDescription) { //implementing a simple version that only checks one word, expand later
 		String name = itemDescription.getLemma();
 		return database.getModels(name);
 	}
@@ -156,15 +158,6 @@ public class Main {
 	 */
 	private static int[] filterByProperty(int[] ids, String attribute, String value) {
 		return new int[] {}; // TODO
-	}
-	
-	/**
-	 * 
-	 * @param name
-	 * @return model name
-	 */
-	private static String getModel(String name){
-		return null; //TODO
 	}
 
 }

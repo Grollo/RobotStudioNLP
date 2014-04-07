@@ -19,6 +19,10 @@ public class NeoDatabase implements Database{
 	
 	GraphDatabaseService db;
 	
+	public NeoDatabase(){
+		
+	}
+	
 	public boolean addVerb(String verb, String action){
 		Node node = db.createNode(NodeType.Verb);
 		node.setProperty(Verb.WORD.toString(), verb);
