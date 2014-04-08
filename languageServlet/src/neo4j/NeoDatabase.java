@@ -219,15 +219,6 @@ public class NeoDatabase implements Database{
 			db = null;
 		}
 	}
-	
-	/*Run to add indexes to database. Only needed when initializing database.*/
-	private void init(){
-		db.schema().indexFor(NodeType.Adjective).create();
-		db.schema().indexFor(NodeType.Verb).create();
-		db.schema().indexFor(NodeType.Noun).create();
-		db.schema().indexFor(NodeType.Model).create();
-		db.schema().indexFor(NodeType.Item).create();
-	}
 
 	private static void registerShutdownHook(final GraphDatabaseService db) {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
