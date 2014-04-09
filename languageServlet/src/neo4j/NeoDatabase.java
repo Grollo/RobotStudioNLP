@@ -45,7 +45,6 @@ public class NeoDatabase implements Database{
 		Node node = db.createNode(NodeType.Verb);
 		node.setProperty(Verb.WORD.toString(), verb);
 		node.setProperty(Verb.COMMAND.toString(), action);
-		db.index().forNodes(NodeType.Verb.toString()).add(node, Verb.WORD.toString(), verb);
 		return true;
 	}
 
@@ -63,7 +62,6 @@ public class NeoDatabase implements Database{
 		node.setProperty(Adjective.WORD.toString(), adjective);
 		node.setProperty(Adjective.PROPERTY.toString(), property);
 		node.setProperty(Adjective.VALUE.toString(), value);
-		db.index().forNodes(NodeType.Adjective.toString()).add(node, Adjective.WORD.toString(), adjective);
 		return true;
 	}
 
@@ -71,14 +69,12 @@ public class NeoDatabase implements Database{
 		Node node = db.createNode(NodeType.Model);
 		node.setProperty(Model.ALIAS.toString(), alias);
 		node.setProperty(Model.FILE.toString(), filename);
-		db.index().forNodes(NodeType.Model.toString()).add(node, Model.ALIAS.toString(), alias);
 		return true;
 	}
 
 	public boolean addNoun(String noun) {
 		Node node = db.createNode(NodeType.Noun);
 		node.setProperty(Noun.WORD.toString(), noun);
-		db.index().forNodes(NodeType.Noun.toString()).add(node, Noun.WORD.toString(), noun);
 		return true;
 	}
 
@@ -107,7 +103,6 @@ public class NeoDatabase implements Database{
 		node.setProperty(ItemProperties.ROTATION.toString(), item.rotation);
 		node.setProperty(ItemProperties.SCALE.toString(), item.scale);
 		node.setProperty(ItemProperties.COLOR.toString(), item.color);
-		db.index().forNodes(NodeType.Item.toString()).add(node, ItemProperties.ID.toString(), item.id);
 		
 		for (String name : item.names) {
 			IndexHits<Node> names = db.index().forNodes(NodeType.Noun.toString()).get(Noun.WORD.toString(), name);

@@ -1,62 +1,56 @@
-#Clear database of related entries
-MATCH (n:Noun)
-MATCH (m:Model)
-MATCH (v:Verb)
-MATCH (a:Adjective)
-MATCH (i:Item)
-OPTIONAL MATCH (m)-[mr]-()
-OPTIONAL MATCH (i)-[ir]-()
-DELETE mr,ir,n,m,v,a,i;
+//Clear database
+MATCH (n)
+OPTIONAL MATCH (n)-[r]-()
+DELETE r, n;
 
-#Create indexes
+//Create indexes
 CREATE INDEX ON :Model(alias);
 CREATE INDEX ON :Noun(word);
 CREATE INDEX ON :Verb(word);
 CREATE INDEX ON :Adjective(word);
 CREATE INDEX ON :Item(id);
 
-#Create models and match aliases
-CREATE (n:Model {alias:"irb120", filename:"???"})
+//Create models and match aliases
+CREATE (model:Model {alias:"irb120", filename:"???"})
 	CREATE (noun:Noun {word:"irb120"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (n:Model {alias:"irb124", filename:"???"})
+CREATE (model:Model {alias:"irb124", filename:"???"})
 	CREATE (noun:Noun {word:"irb124"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (n:Model {alias:"irb2400", filename:"???"})
+CREATE (model:Model {alias:"irb2400", filename:"???"})
 	CREATE (noun:Noun {word:"irb2400"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (n:Model {alias:"frida", filename:"???"})
+CREATE (model:Model {alias:"frida", filename:"???"})
 	CREATE (noun:Noun {word:"frida"})
 	CREATE (noun)-[:MEANS]->(model);
 	
-CREATE (n:Model {alias:"tray", filename:"???"})
-	CREATE (noun:Noun {noun.word = "tray"})
+CREATE (model:Model {alias:"tray", filename:"???"})
+	CREATE (noun:Noun {word:"tray"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (n:Model {alias:"fixture", filename:"???"})
-	CREATE (noun:Noun {noun.word = "fixture"})
+CREATE (model:Model {alias:"fixture", filename:"???"})
+	CREATE (noun:Noun {word:"fixture"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (n:Model {alias:"workpiece", filename:"???"})
-	CREATE (noun:Noun {noun.word = "workpiece"})
+CREATE (model:Model {alias:"workpiece", filename:"???"})
+	CREATE (noun:Noun {word:"workpiece"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (n:Model {alias:"pcb", filename:"???"})
-	CREATE (noun:Noun {noun.word = "pcb"})
+CREATE (model:Model {alias:"pcb", filename:"???"})
+	CREATE (noun:Noun {word:"pcb"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (n:Model {alias:"shielcan", filename:"???"})
-	CREATE (noun:Noun {noun.word = "shielcan"})
+CREATE (model:Model {alias:"shielcan", filename:"???"})
+	CREATE (noun:Noun {word:"shielcan"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (n:Model {alias:"camera", filename:"???"})
-	CREATE (noun:Noun {noun.word = "camera"})
+CREATE (model:Model {alias:"camera", filename:"???"})
+	CREATE (noun:Noun {word:"camera"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (n:Model {alias:"camera socket", filename:"???"})
-	CREATE (noun:Noun {noun.word = "camera socket"})
+CREATE (model:Model {alias:"camera socket", filename:"???"})
+	CREATE (noun:Noun {word:"camera socket"})
 	CREATE (noun)-[:MEANS]->(model);
 	
-	
-
-#Create alternative references to models and link them
+//Create alternative references to models and link them
 CREATE (n:Noun {word:"robot"});
 MATCH (model:Model) WHERE model.alias = "irb120"
 	MATCH (noun:Noun) WHERE noun.word = "robot"
 	CREATE (noun)-[:MEANS]->(model);
-	
-CREATE (verb:Verb {word:"create", does:"create"})
+
+// Create verbs
+CREATE (verb:Verb {word:"create", does:"create"});
