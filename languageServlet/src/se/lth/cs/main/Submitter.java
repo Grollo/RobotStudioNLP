@@ -58,7 +58,6 @@ public class Submitter extends HttpServlet {
 		
 		StringBuilder sb = new StringBuilder();
 		for (Sentence parsedSentence : parsedSentences) {
-			// sanity check?
 			ArrayList<Command> commands = Main.interpret(parsedSentence);
 			for(Command command : commands)
 				sb.append(command + "\n");
@@ -73,11 +72,8 @@ public class Submitter extends HttpServlet {
 		PrintWriter out = response.getWriter();
 
 		// The semantic server processes only one parameter: text
-		// System.out.println("sfkhfksl");
-		// out.println("fdsfksdfhksdfhkjshfjkshdfkjshd");
 		String text = request.getParameter("text");
 		if (text != null) {
-			// out.println(text);
 
 			out.println(process(text));
 		} else {

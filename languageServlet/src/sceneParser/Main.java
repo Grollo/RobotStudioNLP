@@ -2,6 +2,7 @@ package sceneParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -159,6 +160,12 @@ public class Main {
 	 */
 	private static int[] filterByProperty(int[] ids, String attribute, String value) {
 		return new int[] {}; // TODO
+	}
+	
+	private static Map<String, String> extractPropertyAdjectives(String item){
+		Map<String, String> values = new HashMap<String, String>();
+		// TODO: check for adjectives
+		return values;
 	}
 	
 	/**@param t - Should be a empty Array of the same type as <code>a</code> and <code>b</code>.*/
