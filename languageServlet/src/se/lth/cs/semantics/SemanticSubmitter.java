@@ -27,7 +27,7 @@ public class SemanticSubmitter {
     /**
      * @param args the command line arguments
      */
-    private String semanticServer =  "vm46.cs.lth.se:8081"; // http://vm46.cs.lth.se:8081/badaboumDo	a	search	along	the	z-axis	until	you	measure	a	force	of	5	Newton. 
+    private String semanticServer =  "vm46.cs.lth.se:8081";
     ;
  
     
