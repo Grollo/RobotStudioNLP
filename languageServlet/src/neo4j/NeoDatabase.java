@@ -16,7 +16,6 @@ import sceneParser.Item;
 
 public class NeoDatabase implements Database{
 	
-	private RestGraphDatabase db;
 	private RestCypherQueryEngine engine;
 	private RestAPIFacade api;
 	
@@ -188,24 +187,21 @@ public class NeoDatabase implements Database{
 
 	public boolean connect(String urlPath) {
 		// urlPath = "localhost:7474"
-		db = new RestGraphDatabase(urlPath);
 		api = new RestAPIFacade(urlPath);
 		engine = new RestCypherQueryEngine(api);
-		registerShutdownHook(db);
+		registerShutdownHook(api);
 		return true;
 	}
 
 	public void disconnect() {
-		if (db != null) {
-			db.shutdown();
-			db = null;
+		if (api != null) {
 			api.close();
 			api = null;
 			engine = null;
 		}
 	}
 
-	private static void registerShutdownHook(final GraphDatabaseService db) {
+	private static void registerShutdownHook(final RestAPIFacade api2) {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
 				database.disconnect();
