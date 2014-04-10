@@ -92,6 +92,7 @@ public class NeoDatabase implements Database{
 	public boolean createItem(Item item) {
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("$id", item.id);
+		params.put("$model", item.model);
 		params.put("$color", item.color);
 		params.put("$pos x", item.position.x);
 		params.put("$pos y", item.position.y);
@@ -102,7 +103,26 @@ public class NeoDatabase implements Database{
 		params.put("$scale", item.scale);
 		QueryResult<Map<String, Object>> result = engine.query("Create (i:Item {id:{$id}, color:{$color}," +
 				"position_x:{$pos x}, position_y:{$pos y}, position_z:{$pos z}, scale:{$scale}," + 
-				"rotation_x:{$rot x}, rotation_y:{$rot y}, rotation_z:{$rot z}});", params);
+				"rotation_x:{$rot x}, rotation_y:{$rot y}, rotation_z:{$rot z}})" +
+				"MATCH (M:Model) WHERE m.alias = {$model} CREATE (i)-[:MODEL]->(m);", params);
+		return true;
+	}
+	
+	public boolean addName(int itemId, String name){
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$id", itemId);
+		params.put("$name", name);
+		QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item),(n:Noun) " +
+				"WHERE i.id = {$id} AND n.word = {$name} CREATE (n)-[:NAME]->(i);", params);
+		return true;
+	}
+	
+	public boolean removeName(int itemId, String name){
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$id", itemId);
+		params.put("$name", name);
+		QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item),(n:Noun) " +
+				"WHERE i.id = {$id} AND n.word = {$name} MATCH (n)-[r:NAME]->(i) REMOVE r;", params);
 		return true;
 	}
 
