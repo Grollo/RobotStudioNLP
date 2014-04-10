@@ -82,7 +82,7 @@ public class Submitter extends HttpServlet {
 			for (String string : models) {
 				out.print(string + " ");
 			}
-			out.println("\nverb.does = " + verb);
+			out.println("\n verb.does = " + verb);
 		//	out.println(process(text));
 		} else {
 			out.println("No text");

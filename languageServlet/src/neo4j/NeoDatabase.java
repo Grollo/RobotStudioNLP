@@ -1,30 +1,14 @@
 package neo4j;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import neo4j.Constant.Adjective;
 import neo4j.Constant.ItemProperties;
-import neo4j.Constant.ItemRelationships;
-import neo4j.Constant.Model;
-import neo4j.Constant.ModelRelationships;
-import neo4j.Constant.NodeType;
-import neo4j.Constant.Noun;
-import neo4j.Constant.Verb;
-
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.rest.graphdb.RestAPIFacade;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 import org.neo4j.rest.graphdb.entity.RestNode;
-import org.neo4j.rest.graphdb.index.RestIndex;
-import org.neo4j.rest.graphdb.index.RestIndexManager;
 import org.neo4j.rest.graphdb.query.RestCypherQueryEngine;
 import org.neo4j.rest.graphdb.util.QueryResult;
 
@@ -51,151 +35,139 @@ public class NeoDatabase implements Database{
 	}
 	
 	public boolean addVerb(String verb, String action){
-		Node node = db.createNode(NodeType.Verb);
-		node.setProperty(Verb.WORD.toString(), verb);
-		node.setProperty(Verb.COMMAND.toString(), action);
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$verb", verb);
+		params.put("$action", action);
+		engine.query(
+				"CREATE (v:Verb {word:{$verb}, does:{$action}});", params);
 		return true;
 	}
 
 	public boolean addArgument(String verb, String argument, String reference) {
-		IndexHits<Node> words = db.index().forNodes(NodeType.Verb.toString()).get(Verb.WORD.toString(), verb);
-		if (words.size() != 1) {
-			return false;
-		}
-		words.getSingle().setProperty(argument, reference);
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$verb", verb);
+		params.put("$arg", argument);
+		params.put("$value", reference);
+		QueryResult<Map<String, Object>> result = engine.query(
+				"MATCH (v:Verb) WHERE v.word = {$verb} SET v.{$arg} = {$value};", params);
 		return true;
 	}
 	
 	public boolean addAdjective(String adjective, String property, String value){
-		Node node = db.createNode(NodeType.Adjective);
-		node.setProperty(Adjective.WORD.toString(), adjective);
-		node.setProperty(Adjective.PROPERTY.toString(), property);
-		node.setProperty(Adjective.VALUE.toString(), value);
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$adj", adjective);
+		params.put("$property", property);
+		params.put("$value", value);
+		QueryResult<Map<String, Object>> result = engine.query(
+				"CREATE (a:Adjective {word:{$adj}, property:{$property}, value:{$value}});", params);
 		return true;
 	}
 
 	public boolean addModel(String alias, String filename) {
-		Node node = db.createNode(NodeType.Model);
-		node.setProperty(Model.ALIAS.toString(), alias);
-		node.setProperty(Model.FILE.toString(), filename);
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$alias", alias);
+		params.put("$filename", filename);
+		QueryResult<Map<String, Object>> result = engine.query(
+				"CREATE (m:Model {alias:{$alias}, filename:{$filename}});", params);
 		return true;
 	}
 
 	public boolean addNoun(String noun) {
-		Node node = db.createNode(NodeType.Noun);
-		node.setProperty(Noun.WORD.toString(), noun);
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$word", noun);
+		QueryResult<Map<String, Object>> result = engine.query(
+				"CREATE (n:Noun {word:{$word}});", params);
 		return true;
 	}
 
 	public boolean linkModel(String word, String model) {
-		IndexHits<Node> words = db.index().forNodes(NodeType.Noun.toString()).get(Noun.WORD.toString(), word);
-		IndexHits<Node> models = db.index().forNodes(NodeType.Model.toString()).get(Model.FILE.toString(), model);
-		if (words.size() != 1 || models.size() != 1) {
-			return false;
-		}
-		words.getSingle().createRelationshipTo(models.getSingle(),ModelRelationships.MEANS);
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$word", word);
+		params.put("$alias", model);
+		QueryResult<Map<String, Object>> result = engine.query(
+				"MATCH (n:Noun), (m:Model) WHERE n.word = {$word} AND m.alias = {$alias} " +
+				"CREATE (n)-[:MEANS]->(m);", params);
 		return true;
 	}
 
 	public boolean createItem(Item item) {
-		Node node = db.createNode();
-		Index<Node> modelIndex = db.index().forNodes(NodeType.Model.toString());
-		IndexHits<Node> hits = modelIndex.query(Model.ALIAS.toString(), item.model);
-		if (hits.size() != 1) {
-			return false;
-		}
-		node.setProperty(ItemProperties.ID.toString(), item.id);
-		node.createRelationshipTo(hits.getSingle(), ItemRelationships.MODEL);
-		node.setProperty(ItemProperties.POSITION_X.toString(), item.position.x);
-		node.setProperty(ItemProperties.POSITION_Y.toString(), item.position.y);
-		node.setProperty(ItemProperties.POSITION_Z.toString(), item.position.z);
-		node.setProperty(ItemProperties.ROTATION.toString(), item.rotation);
-		node.setProperty(ItemProperties.SCALE.toString(), item.scale);
-		node.setProperty(ItemProperties.COLOR.toString(), item.color);
-		
-		for (String name : item.names) {
-			IndexHits<Node> names = db.index().forNodes(NodeType.Noun.toString()).get(Noun.WORD.toString(), name);
-			if (names.size() != 1) {
-				return false;
-			}
-			names.getSingle().createRelationshipTo(node, ItemRelationships.NAME);
-			names.close();
-		}
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$id", item.id);
+		params.put("$color", item.color);
+		params.put("$pos x", item.position.x);
+		params.put("$pos y", item.position.y);
+		params.put("$pos z", item.position.z);
+		params.put("$rot x", item.rotation.x);
+		params.put("$rot y", item.rotation.y);
+		params.put("$rot z", item.rotation.z);
+		params.put("$scale", item.scale);
+		QueryResult<Map<String, Object>> result = engine.query("Create (i:Item {id:{$id}, color:{$color}," +
+				"position_x:{$pos x}, position_y:{$pos y}, position_z:{$pos z}, scale:{$scale}," + 
+				"rotation_x:{$rot x}, rotation_y:{$rot y}, rotation_z:{$rot z}});", params);
 		return true;
 	}
 
 	public boolean removeItem(Item item) {
-		IndexHits<Node> items = db.index().forNodes(NodeType.Item.toString()).get(ItemProperties.ID.toString(), item.id);
-		if (items.size() != 1 || items.size() != 1) {
-			return false;
-		}
-		Node node = items.getSingle();
-		db.index().forNodes(NodeType.Item.toString()).remove(node);
-		for (Relationship r : node.getRelationships()) {
-			r.delete();
-		}
-		node.delete();
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$id", item.id);
+		QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item) WHERE i.id = {$id} " +
+				"OPTIONAL MATCH (n)-[r]-() REMOVE r,i;", params);
 		return true;
 	}
 
 	public boolean modifyItem(Item item, String attribute, String value) {
-		IndexHits<Node> items = db.index().forNodes(NodeType.Item.toString()).get(ItemProperties.ID.toString(), item.id);
-		if (items.size() != 1 || items.size() != 1) {
-			return false;
-		}
-		Node node = items.getSingle();
-		if(attribute.equals(ItemProperties.MODEL)){
-			db.index().forNodes(NodeType.Item.toString()).remove(node);
-			for (Relationship r : node.getRelationships(ItemRelationships.MODEL)) {
-				r.delete();
-			}
-			
-			Index<Node> modelIndex = db.index().forNodes(NodeType.Model.toString());
-			IndexHits<Node> hits = modelIndex.query(Model.ALIAS.toString(), item.model);
-			if (hits.size() != 1) {
-				return false;
-			}
-			node.createRelationshipTo(hits.getSingle(), ItemRelationships.MODEL);
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$id", item.id);
+		params.put("$attr", attribute);
+		params.put("$value", value);
+		if(attribute.equals(ItemProperties.MODEL.toString())){
+			QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item),(m:Model) WHERE i.id = {$id} " +
+					"AND m.alias = {$value} MATCH (i)-[r:MODEL]->()"+ 
+					"REMOVE r CREATE (i)-[:MODEL]-(m);", params);
 		}else{
-			node.setProperty(attribute, value);
+			QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item) WHERE i.id = {$id} " +
+					"SET i.{$attr} = {$value};", params);
 		}
 		return true;
 	}
 	
 	public Item[] getItems(String name) {
-		Index<Node> index = db.index().forNodes(NodeType.Noun.toString());
-		IndexHits<Node> items = index.query("MATCH ({word:'"+name+"'}-[:NAME]->(r)) RETURN r;");
-		Item[] result = new Item[items.size()];
-		int i = 0;
-		for (Node node : items) {
-			result[i++] = getItem(node);
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$name", name);
+		QueryResult<Map<String, Object>> result = engine.query("MATCH (n:Noun) WHERE n.word = {$name}" +
+				"MATCH (n)-[:NAME]->(i:Item) RETURN i;", params);
+		ArrayList<Item> items = new ArrayList<Item>();
+		for (Map<String, Object> map2 : result) {
+			RestNode node = (RestNode) map2.get("i");
+			items.add(new Item((int) node.getProperty("id")));
 		}
-		return result;
-	}
-	
-	private Item getItem(Node node){
-		int id = (int) node.getProperty(ItemProperties.ID.toString());
-		String model = (String) node.getSingleRelationship(ItemRelationships.MODEL, Direction.OUTGOING)
-				.getEndNode().getProperty(Model.ALIAS.toString());
-		Item item = new Item(id, model);
-		return item;
+		return items.toArray(new Item[0]);
 	}
 
 	public String[] getModels(String name) {
-		Index<Node> index = db.index().forNodes(NodeType.Noun.toString());
-		IndexHits<Node> items = index.query("MATCH ({word:'"+name+"'}-[:MEANS]->(r)) RETURN r;");
-		String[] result = new String[items.size()];
-		int i = 0;
-		for (Node node : items) {
-			result[i++] = (String) node.getProperty(Model.ALIAS.toString());
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$name", name);
+		QueryResult<Map<String, Object>> result = engine.query("MATCH (n:Noun) WHERE n.word = {$name}" +
+				"MATCH (n)-[:MEANS]->(m:Model) RETURN m;", params);
+		ArrayList<String> models = new ArrayList<String>();
+		for (Map<String, Object> map2 : result) {
+			RestNode node = (RestNode) map2.get("m");
+			models.add((String) node.getProperty("filename"));
 		}
-		return result;
+		return models.toArray(new String[0]);
 	}
 
 	public String[] getAdjective(String adjective) {
-		Node node = db.index().forNodes(NodeType.Adjective.toString()).get(Adjective.WORD.toString(), adjective).getSingle();
-		return new String[]{(String) node.getProperty(Adjective.PROPERTY.toString()),
-				(String) node.getProperty(Adjective.VALUE.toString())};
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$word", adjective);
+		QueryResult<Map<String, Object>> result = engine.query("match (a:Adjective) where a.word = {$word} return a;", params);
+		RestNode node = null;
+		for (Map<String, Object> map2 : result) {
+			node = (RestNode) map2.get("v");
+		}
+		String property = (String) node.getProperty("property");
+		String value = (String) node.getProperty("value");
+		return new String[]{property, value};
 	}
 
 	public Map<String, String> getVerb(String verb) {

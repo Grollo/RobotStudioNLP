@@ -27,11 +27,15 @@ public class Constant {
 	public static enum ItemProperties {
 		ID ("id"),
 		MODEL ("model"),
-		POSITION_X ("position x"),
-		POSITION_Y ("position y"),
-		POSITION_Z ("position z"),
-		ROTATION ("rotation"),
-		SCALE ("scale"),
+		POSITION_X ("position_x"),
+		POSITION_Y ("position_y"),
+		POSITION_Z ("position_z"),
+		ROTATION_X ("rotation_x"),
+		ROTATION_Y ("rotation_y"),
+		ROTATION_Z ("rotation_z"),
+		SCALE_X ("scale x"),
+		SCALE_Y ("scale x"),
+		SCALE_Z ("scale x"),
 		COLOR ("color");
 		public final String string;
 		

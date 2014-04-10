@@ -8,16 +8,16 @@ public class Item {
 	public int id;
 	public String model;
 	public Position position;
-	public float rotation;
+	public Position rotation;
 	public float scale;
 	public String color;
 	public List<String> names;
 	
-	public Item(int id, String model){
+	public Item(int id){
 		this.id = id;
-		this.model = model;
+		this.model = null;
 		position = new Position(0, 0, 0);
-		rotation = 0;
+		rotation = new Position(0, 0, 0);
 		scale = 1;
 		color = null;
 		names = new ArrayList<String>();
