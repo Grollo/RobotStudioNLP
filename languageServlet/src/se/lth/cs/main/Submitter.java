@@ -11,6 +11,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -18,6 +19,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import neo4j.NeoDatabase;
 import sceneParser.Command;
 import sceneParser.Main;
 import se.lth.cs.semantics.PredArgs;
@@ -58,7 +60,6 @@ public class Submitter extends HttpServlet {
 		
 		StringBuilder sb = new StringBuilder();
 		for (Sentence parsedSentence : parsedSentences) {
-			// sanity check?
 			ArrayList<Command> commands = Main.interpret(parsedSentence);
 			for(Command command : commands)
 				sb.append(command + "\n");
@@ -73,13 +74,16 @@ public class Submitter extends HttpServlet {
 		PrintWriter out = response.getWriter();
 
 		// The semantic server processes only one parameter: text
-		// System.out.println("sfkhfksl");
-		// out.println("fdsfksdfhksdfhkjshfjkshdfkjshd");
 		String text = request.getParameter("text");
 		if (text != null) {
-			// out.println(text);
-
-			out.println(process(text));
+			Map<String, String> verbs = NeoDatabase.getDatabase().getVerb("create");
+			String[] models = NeoDatabase.getDatabase().getModels("robot");
+			String verb = verbs.get("does");
+			for (String string : models) {
+				out.print(string + " ");
+			}
+			out.println("\nverb.does = " + verb);
+		//	out.println(process(text));
 		} else {
 			out.println("No text");
 		}

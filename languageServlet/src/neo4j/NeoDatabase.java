@@ -19,13 +19,22 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.ReadableIndex;
+import org.neo4j.rest.graphdb.RestAPIFacade;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
+import org.neo4j.rest.graphdb.entity.RestNode;
+import org.neo4j.rest.graphdb.index.RestIndex;
+import org.neo4j.rest.graphdb.index.RestIndexManager;
+import org.neo4j.rest.graphdb.query.RestCypherQueryEngine;
+import org.neo4j.rest.graphdb.util.QueryResult;
 
 import sceneParser.Item;
 
 public class NeoDatabase implements Database{
 	
-	private GraphDatabaseService db;
+	private RestGraphDatabase db;
+	private RestCypherQueryEngine engine;
+	private RestAPIFacade api;
 	
 	private static NeoDatabase database;
 	
@@ -190,13 +199,17 @@ public class NeoDatabase implements Database{
 	}
 
 	public Map<String, String> getVerb(String verb) {
-		IndexManager indexM = db.index();
-		Index<Node> index = indexM.forNodes(NodeType.Verb.toString());
-		IndexHits<Node> hits = index.get(Verb.WORD.toString(), verb);
-		Node node = hits.getSingle();
 		Map<String, String> map = new HashMap<String, String>();
-		for (String key : node.getPropertyKeys()) {
-			map.put(key, (String) node.getProperty(key));
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$verb", verb);
+		QueryResult<Map<String, Object>> result = engine.query("match (v:Verb) where v.word = {$verb} return v;", params);
+		RestNode node = null;
+		for (Map<String, Object> map2 : result) {
+			Object o = map2.get("v");
+			node = (RestNode) o;
+		}
+		for (String key : node.getPropertyKeys()) {			
+			map.put(key, node.getProperty(key).toString());
 		}
 		return map;
 	}
@@ -204,6 +217,8 @@ public class NeoDatabase implements Database{
 	public boolean connect(String urlPath) {
 		// urlPath = "localhost:7474"
 		db = new RestGraphDatabase(urlPath);
+		api = new RestAPIFacade(urlPath);
+		engine = new RestCypherQueryEngine(api);
 		registerShutdownHook(db);
 		return true;
 	}
@@ -212,13 +227,16 @@ public class NeoDatabase implements Database{
 		if (db != null) {
 			db.shutdown();
 			db = null;
+			api.close();
+			api = null;
+			engine = null;
 		}
 	}
 
 	private static void registerShutdownHook(final GraphDatabaseService db) {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
-				db.shutdown();
+				database.disconnect();
 			}
 		});
 	}
