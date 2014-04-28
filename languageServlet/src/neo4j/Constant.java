@@ -36,7 +36,8 @@ public class Constant {
 		SCALE_X ("scale x"),
 		SCALE_Y ("scale x"),
 		SCALE_Z ("scale x"),
-		COLOR ("color");
+		COLOR ("color"),
+		WEIGHT ("weight");
 		public final String string;
 		
 		private ItemProperties(String string){
