@@ -76,14 +76,7 @@ public class Submitter extends HttpServlet {
 		// The semantic server processes only one parameter: text
 		String text = request.getParameter("text");
 		if (text != null) {
-			Map<String, String> verbs = NeoDatabase.getDatabase().getVerb("create");
-			String[] models = NeoDatabase.getDatabase().getModels("robot");
-			String verb = verbs.get("does");
-			for (String string : models) {
-				out.print(string + " ");
-			}
-			out.println("\n verb.does = " + verb);
-		//	out.println(process(text));
+			out.println(process(text));
 		} else {
 			out.println("No text");
 		}

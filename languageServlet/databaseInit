@@ -11,38 +11,38 @@ CREATE INDEX ON :Adjective(word);
 CREATE INDEX ON :Item(id);
 
 //Create models and match aliases
-CREATE (model:Model {alias:"irb120", filename:"???"})
+CREATE (model:Model {alias:"irb120", filename:"irb120.model"})
 	CREATE (noun:Noun {word:"irb120"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"irb124", filename:"???"})
+CREATE (model:Model {alias:"irb124", filename:"irb124.model"})
 	CREATE (noun:Noun {word:"irb124"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"irb2400", filename:"???"})
+CREATE (model:Model {alias:"irb2400", filename:"irb2400.model"})
 	CREATE (noun:Noun {word:"irb2400"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"frida", filename:"???"})
+CREATE (model:Model {alias:"frida", filename:"frida.model"})
 	CREATE (noun:Noun {word:"frida"})
 	CREATE (noun)-[:MEANS]->(model);
 	
-CREATE (model:Model {alias:"tray", filename:"???"})
+CREATE (model:Model {alias:"tray", filename:"tray.model"})
 	CREATE (noun:Noun {word:"tray"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"fixture", filename:"???"})
+CREATE (model:Model {alias:"fixture", filename:"fixture.model"})
 	CREATE (noun:Noun {word:"fixture"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"workpiece", filename:"???"})
+CREATE (model:Model {alias:"workpiece", filename:"workpiece.model"})
 	CREATE (noun:Noun {word:"workpiece"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"pcb", filename:"???"})
+CREATE (model:Model {alias:"pcb", filename:"pcb.model"})
 	CREATE (noun:Noun {word:"pcb"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"shielcan", filename:"???"})
+CREATE (model:Model {alias:"shielcan", filename:"sheilcan.model"})
 	CREATE (noun:Noun {word:"shielcan"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"camera", filename:"???"})
+CREATE (model:Model {alias:"camera", filename:"camera.model"})
 	CREATE (noun:Noun {word:"camera"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"camera socket", filename:"???"})
+CREATE (model:Model {alias:"camera socket", filename:"cameraSocket.model"})
 	CREATE (noun:Noun {word:"camera socket"})
 	CREATE (noun)-[:MEANS]->(model);
 	
@@ -69,8 +69,13 @@ CREATE (verb:Verb {word:"put", does:"createORmodify"});
 CREATE (verb:Verb {word:"make", does:"createORmodify"});
 CREATE (verb:Verb {word:"place", does:"createORmodify"});
 
-CREATE (verb:Verb {word:"change", does:"modify"});
+CREATE (verb:Verb {word:"call", does:"name"});
+CREATE (verb:Verb {word:"label", does:"name"});
+CREATE (verb:Verb {word:"name", does:"name"});
+
 CREATE (verb:Verb {word:"alter", does:"modify"});
+CREATE (verb:Verb {word:"change", does:"modify"});
+CREATE (verb:Verb {word:"modify", does:"modify"});
 CREATE (verb:Verb {word:"move", does:"modify"});
 
 CREATE (verb:Verb {word:"clear", does:"remove"});
@@ -78,23 +83,28 @@ CREATE (verb:Verb {word:"dispatch", does:"remove"});
 CREATE (verb:Verb {word:"remove", does:"remove"});
 
 // Adjectives
-	\\positions
-	CREATE (adj:Adjective {word:"north" property:"position x" value:"1"});
-	CREATE (adj:Adjective {word:"west" property:"position y" value:"1"});
-	CREATE (adj:Adjective {word:"south" property:"position x" value:"-1"});
-	CREATE (adj:Adjective {word:"east" property:"position y" value:"-1"});
-	CREATE (adj:Adjective {word:"forward" property:"position x" value:"1"});
-	CREATE (adj:Adjective {word:"backward" property:"position x" value:"-1"});
-	CREATE (adj:Adjective {word:"right" property:"position y" value:"1"});
-	CREATE (adj:Adjective {word:"left" property:"position y" value:"-1"});
+	//positions
+	CREATE (adj:Adjective {word:"north", property:"position x", value:"1"});
+	CREATE (adj:Adjective {word:"west", property:"position y", value:"1"});
+	CREATE (adj:Adjective {word:"south", property:"position x", value:"-1"});
+	CREATE (adj:Adjective {word:"east", property:"position y", value:"-1"});
+	CREATE (adj:Adjective {word:"forward", property:"position x", value:"1"});
+	CREATE (adj:Adjective {word:"backward", property:"position x", value:"-1"});
+	CREATE (adj:Adjective {word:"right", property:"position y", value:"1"});
+	CREATE (adj:Adjective {word:"left", property:"position y", value:"-1"});
+	
+	CREATE (adj:Adjective {word:"up", property:"position z", value:"1"});
+	CREATE (adj:Adjective {word:"down", property:"position z", value:"-1"});
+	CREATE (adj:Adjective {word:"upward", property:"position z", value:"1"});
+	CREATE (adj:Adjective {word:"downward", property:"position z", value:"-1"});
 
-	\\colors
-	CREATE (adj:Adjective {word:"white" property:"color" value:"FFFFFF"});
-	CREATE (adj:Adjective {word:"grey" property:"color" value:"808080"});
-	CREATE (adj:Adjective {word:"black" property:"color" value:"000000"});
-	CREATE (adj:Adjective {word:"red" property:"color" value:"FF0000"});
-	CREATE (adj:Adjective {word:"green" property:"color" value:"00FF00"});
-	CREATE (adj:Adjective {word:"blue" property:"color" value:"0000FF"});
-	CREATE (adj:Adjective {word:"yellow" property:"color" value:"FFFF00"});
-	CREATE (adj:Adjective {word:"purple" property:"color" value:"FF00FF"});
-	CREATE (adj:Adjective {word:"cyan" property:"color" value:"00FFFF"});
+	//colors
+	CREATE (adj:Adjective {word:"white", property:"color", value:"FFFFFF"});
+	CREATE (adj:Adjective {word:"grey", property:"color", value:"808080"});
+	CREATE (adj:Adjective {word:"black", property:"color", value:"000000"});
+	CREATE (adj:Adjective {word:"red", property:"color", value:"FF0000"});
+	CREATE (adj:Adjective {word:"green", property:"color", value:"00FF00"});
+	CREATE (adj:Adjective {word:"blue", property:"color", value:"0000FF"});
+	CREATE (adj:Adjective {word:"yellow", property:"color", value:"FFFF00"});
+	CREATE (adj:Adjective {word:"purple", property:"color", value:"FF00FF"});
+	CREATE (adj:Adjective {word:"cyan", property:"color", value:"00FFFF"});

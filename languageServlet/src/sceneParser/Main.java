@@ -66,7 +66,6 @@ public class Main {
 	}
 
 	private static int getNextId() {
-		nextId++;
 		return nextId++;
 	}
 
@@ -116,14 +115,29 @@ public class Main {
 	}
 
 	/**
-	 * given a description of an item, find a model in the database that fits
-	 * if no fitting model is found, return null
+	 * Given a description of an item, finds models in the database that fits the description.
+	 * if no fitting model is found, returns null.
 	 * @param itemDescription
-	 * @return
+	 * @return 
 	 */
 	private static String[] appropriateModels(Word itemDescription) { //implementing a simple version that only checks one word, expand later
 		String name = itemDescription.getLemma();
-		return database.getModels(name);
+		String[] models = database.getModels(name);
+		for(String subnoun : getAllSubnoun(itemDescription)){
+			models = intersection(models, database.getModels(subnoun), new String[0]);
+		}
+		
+		return models;
+	}
+	
+	private static List<String> getAllSubnoun(Word itemDescription) {
+		ArrayList<String> words = new ArrayList<>();
+		for(Word child : itemDescription.getChildren()) {
+			if(child.getPOS().equals("NN")) {
+				words.add(child.getLemma());
+			}
+		}
+		return words;
 	}
 	
 	/**
@@ -184,6 +198,8 @@ public class Main {
 				j++;
 			}else if(a[i].equals(b[j])) {
 				result.add(a[i]);
+				i++;
+				j++;
 			}else{
 				i++;
 				j++;
