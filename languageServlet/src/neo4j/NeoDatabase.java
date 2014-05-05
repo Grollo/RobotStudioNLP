@@ -5,9 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import neo4j.Constant.ItemProperties;
-import org.neo4j.graphdb.GraphDatabaseService;
+
 import org.neo4j.rest.graphdb.RestAPIFacade;
-import org.neo4j.rest.graphdb.RestGraphDatabase;
 import org.neo4j.rest.graphdb.entity.RestNode;
 import org.neo4j.rest.graphdb.query.RestCypherQueryEngine;
 import org.neo4j.rest.graphdb.util.QueryResult;
@@ -158,9 +157,25 @@ public class NeoDatabase implements Database{
 		ArrayList<Item> items = new ArrayList<Item>();
 		for (Map<String, Object> map2 : result) {
 			RestNode node = (RestNode) map2.get("i");
-			items.add(new Item((int) node.getProperty("id")));
+			Item item = new Item((int) node.getProperty("id"));
+			items.add(item);
+			for (String key : node.getPropertyKeys()) {
+				item.properties.put(key, (String) node.getProperty(key));
+			}
+			getNames(item);
 		}
 		return items.toArray(new Item[0]);
+	}
+	
+	private void getNames(Item item) {
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$id", item.id);
+		QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item) WHERE i.id = {$id}" +
+				"MATCH (n)-[:NAME]->(i:Item) RETURN n;", params);
+		for (Map<String, Object> map2 : result) {
+			RestNode node = (RestNode) map2.get("n");
+			item.names.add((String) node.getProperty("word"));
+		}
 	}
 
 	public String[] getModels(String name) {
@@ -176,7 +191,8 @@ public class NeoDatabase implements Database{
 		return models.toArray(new String[0]);
 	}
 
-	public String[] getAdjective(String adjective) {
+	public Map<String, String> getAdjective(String adjective) {
+		Map<String, String> map = new HashMap<String, String>();
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("$word", adjective);
 		QueryResult<Map<String, Object>> result = engine.query("match (a:Adjective) where a.word = {$word} return a;", params);
@@ -184,9 +200,10 @@ public class NeoDatabase implements Database{
 		for (Map<String, Object> map2 : result) {
 			node = (RestNode) map2.get("v");
 		}
-		String property = (String) node.getProperty("property");
-		String value = (String) node.getProperty("value");
-		return new String[]{property, value};
+		for (String key : node.getPropertyKeys()) {			
+			map.put(key, node.getProperty(key).toString());
+		}
+		return map;
 	}
 
 	public Map<String, String> getVerb(String verb) {

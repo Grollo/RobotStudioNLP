@@ -1,5 +1,6 @@
 package neo4j;
 
+import java.util.List;
 import java.util.Map;
 
 import sceneParser.Item;
@@ -96,7 +97,7 @@ public interface Database {
 	 * @param adjective - the adjective itself.
 	 * @return a Array where the first argument is the property and the second is the value.
 	 */
-	public String[] getAdjective(String adjective);
+	public Map<String, String> getAdjective(String adjective);
 	
 	/**Gets a verb from the database.
 	 * @param verb - the verb itself.

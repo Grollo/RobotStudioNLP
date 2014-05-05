@@ -1,7 +1,9 @@
 package sceneParser;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Item {
 	
@@ -13,14 +15,16 @@ public class Item {
 	public String color;
 	public List<String> names;
 	
+	public Map<String, String> properties;
+	
 	public Item(int id){
 		this.id = id;
-		this.model = null;
-		position = new Position(0, 0, 0);
-		rotation = new Position(0, 0, 0);
-		scale = 1;
-		color = null;
 		names = new ArrayList<String>();
+		properties = new HashMap<String, String>();
+	}
+	
+	public String get(String property){
+		return properties.get(property);
 	}
 	
 	public class Position{

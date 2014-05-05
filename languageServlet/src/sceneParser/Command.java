@@ -3,24 +3,24 @@ package sceneParser;
 public class Command {
 	String[] s;
 	
-	private Command(String[] s){
+	private Command(String... s){
 		this.s = s;
 	}
 
 	public static Command create(int id, String model){
-		return new Command(new String[] {"create", Integer.toString(id), model});
+		return new Command("create", Integer.toString(id), model);
 	}
 
 	public static Command remove(int id){
-		return new Command(new String[] {"remove", Integer.toString(id)});
+		return new Command("remove", Integer.toString(id));
 	}
 
 	public static Command modify(int id, String attribute, String value){
-		return new Command(new String[] {"modify", Integer.toString(id), attribute, value});
+		return new Command("modify", Integer.toString(id), attribute, value);
 	}
 
 	public static Command notify(String message){
-		return new Command(new String[] {"notify", message});
+		return new Command("notify", message);
 	}
 	
 	@Override

@@ -2,10 +2,14 @@ package sceneParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+
+import javax.swing.text.html.HTMLDocument.Iterator;
 
 import neo4j.NeoDatabase;
 import se.lth.cs.semparser.corpus.Predicate;
@@ -54,15 +58,18 @@ public class Main {
 		Set<Word> words = rootPredicate.getArgMap().keySet();
 		Word itemDescription = null;
 		for(Word word : words){
-			if(rootPredicate.getArgMap().get(word).equals(itemToMakeArgument))
+			if(rootPredicate.getArgMap().get(word).equals(itemToMakeArgument)){
 				itemDescription = word;
+				break;
+			}
 		}
 		String[] possibleModels = appropriateModels(itemDescription);
 		if(possibleModels.length == 0)
 			return noModelFound;
 		if(possibleModels.length > 1)
 			return tooManyModels;
-		return Command.create(getNextId(), possibleModels[0]);
+		int id = getNextId();
+		return Command.create(id, possibleModels[0]);
 	}
 
 	private static int getNextId() {
@@ -74,15 +81,17 @@ public class Main {
 		Set<Word> words = rootPredicate.getArgMap().keySet();
 		Word itemDescription = null;
 		for(Word word : words){
-			if(rootPredicate.getArgMap().get(word).equals(affectedItemArgument))
+			if(rootPredicate.getArgMap().get(word).equals(affectedItemArgument)) {
 				itemDescription = word;
+				break;
+			}
 		}
-		int[] id = getIds(itemDescription);
+		Item[] id = identify(itemDescription);
 		if(id.length == 0)
 			return noItemFound;
 		if(id.length > 1)
 			return tooManyItemsFound;
-		return Command.remove(id[0]);
+		return Command.remove(id[0].id);
 	}
 
 	private static Command makeModify(Map<String, String> verb, Predicate rootPredicate) {
@@ -123,21 +132,36 @@ public class Main {
 	private static String[] appropriateModels(Word itemDescription) { //implementing a simple version that only checks one word, expand later
 		String name = itemDescription.getLemma();
 		String[] models = database.getModels(name);
-		for(String subnoun : getAllSubnoun(itemDescription)){
+		for(String subnoun : getSubtags(itemDescription, "NN")){
 			models = intersection(models, database.getModels(subnoun), new String[0]);
 		}
 		
 		return models;
 	}
 	
-	private static List<String> getAllSubnoun(Word itemDescription) {
+	/**@return All words with matching <code>tag</code> from one level beneath <code>item</code>.*/
+	private static List<String> getSubtags(Word item, String tag) {
 		ArrayList<String> words = new ArrayList<>();
-		for(Word child : itemDescription.getChildren()) {
-			if(child.getPOS().equals("NN")) {
+		for(Word child : item.getChildren()) {
+			if(child.getPOS().equals(tag)) {
 				words.add(child.getLemma());
 			}
 		}
 		return words;
+	}
+	
+	private static Boolean shouldCreate(Word item){
+		List<String> dts = getSubtags(item, "DT");
+		if(dts.size() > 1)
+			return null;
+		switch(dts.get(0)){
+			case "a":
+			case "an":
+				return true;
+			case "the":
+			default:
+				return false;
+		}
 	}
 	
 	/**
@@ -149,21 +173,27 @@ public class Main {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	private static Item[] identify(Word item) {
+		Item[] items = possibleItems(item.getLemma());
+		Map<String, String> adjectives = extractAdjectives(item);
+		List<String> names = extractNames(item);
+		for (String name : names) {
+			filterByName(items, name);
+		}
+		for (Entry<String, String> entry : adjectives.entrySet()) {
+			filterByProperty(items, entry.getKey(), entry.getValue());
+		}
+		return items;
+	}
 
 	/**
 	 * @param noun
 	 * @return list of ids of items the noun could be referring to
 	 */
-	private static int[] possibleItems(String noun) {
-		return new int[] {}; // TODO
-	}
-
-	/**
-	 * @param name
-	 * @return ids of all items that have the name
-	 */
-	private static int[] namedItemsWithName(String name) {
-		return new int[] {}; // TODO
+	private static Item[] possibleItems(String noun) {
+		Item[] items = database.getItems(noun);
+		return items;
 	}
 
 	/**
@@ -172,14 +202,57 @@ public class Main {
 	 * @param value
 	 * @return sublist of items that fit the property
 	 */
-	private static int[] filterByProperty(int[] ids, String attribute, String value) {
-		return new int[] {}; // TODO
+	private static Item[] filterByProperty(Item[] items, String property, String value) {
+		List<Item> filtered = new ArrayList<Item>();
+		for (Item item : filtered) {
+			if(item.get(property).equals(value)){
+				filtered.add(item);
+			}
+		}
+		return filtered.toArray(new Item[0]);
 	}
 	
-	private static Map<String, String> extractPropertyAdjectives(String item){
+	private static Item[] filterByName(Item[] items, String name) {
+		List<Item> filtered = new ArrayList<Item>();
+		for (Item item : filtered) {
+			if(item.names.contains(name)){
+				filtered.add(item);
+			}
+		}
+		return filtered.toArray(new Item[0]);
+	}
+	
+	private static Map<String, String> extractAdjectives(Word item){
 		Map<String, String> values = new HashMap<String, String>();
-		// TODO: check for adjectives
+		getAllAdjectives(values, item);
 		return values;
+	}
+	
+	private static List<String> extractNames(Word item){
+		List<String> values = new ArrayList<String>();
+		getAllNames(values, item);
+		return values;
+	}
+	
+	/**@return All words with matching <code>tag</code> from all levels beneath <code>item</code>.*/
+	private static void getAllNames(List<String> values, Word word) {
+		if(word.getPOS().equals("NNP")) {
+			values.add(word.getLemma());
+		}
+		for(Word child : word.getChildren()) {
+			getAllNames(values, child);
+		}
+	}
+
+	/**@return All words with matching <code>tag</code> from all levels beneath <code>item</code>.*/
+	private static void getAllAdjectives(Map<String, String> values, Word word) {
+		if(word.getPOS().equals("JJ")) {
+			Map<String, String> map = database.getAdjective(word.getLemma());
+			values.put(map.get("property"), map.get("value"));
+		}
+		for(Word child : word.getChildren()) {
+			getAllAdjectives(values, child);
+		}
 	}
 	
 	/**@param t - Should be a empty Array of the same type as <code>a</code> and <code>b</code>.*/
