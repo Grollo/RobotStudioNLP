@@ -43,7 +43,6 @@ public class Main {
 			} else {
 				Map<String, String> verb = database.getVerb(rootPredicate.getLemma());
 				String commandType = verb.get("does");
-				Command command = null;
 				switch(commandType){
 				case "create":	commands.addAll(makeCreate(verb, rootPredicate));
 								break;
@@ -52,7 +51,6 @@ public class Main {
 				case "modify":	commands.addAll(makeModify(verb, rootPredicate));
 								break;
 				}
-				commands.add(command);
 			}
 		}
 		return commands;
