@@ -44,11 +44,11 @@ public class Main {
 				String commandType = verb.get("does");
 				Command command = null;
 				switch(commandType){
-				case "create":	command = makeCreate(verb, rootPredicate);
+				case "create":	commands.addAll(makeCreate(verb, rootPredicate));
 								break;
-				case "remove":	command = makeRemove(verb, rootPredicate);
+				case "remove":	commands.addAll(makeRemove(verb, rootPredicate));
 								break;
-				case "modify":	command = makeModify(verb, rootPredicate);
+				case "modify":	commands.addAll(makeModify(verb, rootPredicate));
 								break;
 				}
 				commands.add(command);
@@ -57,32 +57,45 @@ public class Main {
 		return commands;
 	}
 
-	private static Command makeCreate(Map<String, String> verb, Predicate rootPredicate) {
+	private static ArrayList<Command> makeCreate(Map<String, String> verb, Predicate rootPredicate) {
+		ArrayList<Command> commands = new ArrayList<Command>();
 		Word itemDescription = getArgumentHead(rootPredicate, "A1");
 		String[] possibleModels = appropriateModels(itemDescription);
-		if(possibleModels.length == 0)
-			return noModelFound;
-		if(possibleModels.length > 1)
-			return tooManyModels;
+		if(possibleModels.length == 0){
+			commands.add(noModelFound);
+			return commands;
+		}
+		if(possibleModels.length > 1){
+			commands.add(tooManyModels);
+			return commands;
+		}
 		int id = getNextId();
-		return Command.create(id, possibleModels[0]);
+		commands.add(Command.create(id, possibleModels[0]));
+		return commands;
 	}
 
 	private static int getNextId() {
 		return nextId++;
 	}
 
-	private static Command makeRemove(Map<String, String> verb, Predicate rootPredicate) {
+	private static ArrayList<Command> makeRemove(Map<String, String> verb, Predicate rootPredicate) {
+		ArrayList<Command> commands = new ArrayList<Command>();
 		Word itemDescription = getArgumentHead(rootPredicate, "A1");
 		Item[] id = identify(itemDescription);
-		if(id.length == 0)
-			return noItemFound;
-		if(id.length > 1)
-			return tooManyItemsFound;
-		return Command.remove(id[0].id);
+		if(id.length == 0){
+			commands.add(noItemFound);
+			return commands;
+		}
+		if(id.length > 1){
+			commands.add(tooManyItemsFound);
+			return commands;
+		}
+		commands.add(Command.remove(id[0].id));
+		return commands;
 	}
 
-	private static Command makeModify(Map<String, String> verb, Predicate rootPredicate) {
+	private static ArrayList<Command> makeModify(Map<String, String> verb, Predicate rootPredicate) {
+		ArrayList<Command> commands = new ArrayList<Command>();
 		Item item = null;
 		Map<String, String> adjective = null;
 		String property = null;
@@ -91,15 +104,20 @@ public class Main {
 		Word object = getObject(rootPredicate);
 		Boolean creater = shouldCreate(object); 
 		if(creater == null){
-			return Command.notify("Grammatical error.");
+			commands.add(Command.notify("Grammatical error."));
+			return commands;
 		} else if(creater) {	
 			//TODO Create new object
 		} else {			
 			Item[] items = identify(object);
-			if(items.length == 0)
-				return noItemFound;
-			if(items.length > 1)
-				return tooManyItemsFound;
+			if(items.length == 0){
+				commands.add(noItemFound);
+				return commands;
+			}
+			if(items.length > 1){
+				commands.add(tooManyItemsFound);
+				return commands;
+			}
 			item = items[0];
 		}
 		
@@ -119,13 +137,18 @@ public class Main {
 			value = adjective.get("value");
 		}
 		String objectValue = item.get(property);
-		if(objectValue == null)
-			return Command.notify("Illegal Property on Object.");
+		if(objectValue == null){
+			commands.add(Command.notify("Illegal Property on Object."));
+			return commands;
+		}
 		value = applyFunction(function, value, objectValue);
 
-		if(property == null || value == null)
-			return Command.notify("Grammatical error.");
-		return Command.modify(item.id, property, value);
+		if(property == null || value == null){
+			commands.add(Command.notify("Grammatical error."));
+			return commands;
+		}
+		commands.add(Command.modify(item.id, property, value));
+		return commands;
 	}
 	
 	private static String applyFunction(String function, String value, String sourceValue) throws NumberFormatException {
