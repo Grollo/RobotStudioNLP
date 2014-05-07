@@ -60,6 +60,13 @@ CREATE (n:Noun {word:"robot"});
 	MATCH (model:Model) WHERE model.alias = "frida"
 		MATCH (noun:Noun) WHERE noun.word = "robot"
 		CREATE (noun)-[:MEANS]->(model);
+CREATE (noun:Noun {word:"all"})
+	MATCH (model:Model)
+	CREATE (noun)-[:MEANS]->(model);
+CREATE (noun:Noun {word:"everything"})
+	MATCH (model:Model)
+	CREATE (noun)-[:MEANS]->(model);
+
 
 // Verbs
 CREATE (verb:Verb {word:"create", does:"create"});
@@ -73,30 +80,33 @@ CREATE (verb:Verb {word:"rotate", does:"modify", property:"rotation"});
 CREATE (verb:Verb {word:"move", does:"modify", property:"position"});
 CREATE (verb:Verb {word:"place", does:"modify", property:"position"});
 CREATE (verb:Verb {word:"put", does:"modify", property:"position"});
-CREATE (verb:Verb {word:"lower", does:"modify", property:"position_x", function:"-x"});
-CREATE (verb:Verb {word:"raise", does:"modify", property:"position_x", function:"x"});
+CREATE (verb:Verb {word:"lower", does:"modify", property:"position_z", function:"y - x"});
+CREATE (verb:Verb {word:"raise", does:"modify", property:"position_z", function:"y + x"});
 CREATE (verb:Verb {word:"call", does:"modify", property:"name"});
 CREATE (verb:Verb {word:"label", does:"modify", property:"name"});
 CREATE (verb:Verb {word:"name", does:"modify", property:"name"});
+CREATE (verb:Verb {word:"color", does:"modify", property:"color"});
+CREATE (verb:Verb {word:"paint", does:"modify", property:"color"});
 CREATE (verb:Verb {word:"clear", does:"remove"});
 CREATE (verb:Verb {word:"dispatch", does:"remove"});
 CREATE (verb:Verb {word:"remove", does:"remove"});
 
 // Adjectives
 	//positions
-	CREATE (adj:Adjective {word:"north", property:"position_x", function:"x"});
-	CREATE (adj:Adjective {word:"west", property:"position_y", function:"x"});
-	CREATE (adj:Adjective {word:"south", property:"position_x", function:"-x"});
-	CREATE (adj:Adjective {word:"east", property:"position_y", function:"-x"});
-	CREATE (adj:Adjective {word:"forward", property:"position_x", function:"x"});
-	CREATE (adj:Adjective {word:"backward", property:"position_x", function:"-x"});
-	CREATE (adj:Adjective {word:"right", property:"position_y", function:"x"});
-	CREATE (adj:Adjective {word:"left", property:"position_y", function:"-x"});
+	CREATE (adj:Adjective {word:"north", property:"position_x", function:"y + x"});
+	CREATE (adj:Adjective {word:"west", property:"position_y", function:"y + x"});
+	CREATE (adj:Adjective {word:"south", property:"position_x", function:"y - x"});
+	CREATE (adj:Adjective {word:"east", property:"position_y", function:"y - x"});
+	CREATE (adj:Adjective {word:"forward", property:"position_x", function:"y + x"});
+	CREATE (adj:Adjective {word:"backward", property:"position_x", function:"y - x"});
+	CREATE (adj:Adjective {word:"back", property:"position_x", function:"y - x"});
+	CREATE (adj:Adjective {word:"right", property:"position_y", function:"y + x"});
+	CREATE (adj:Adjective {word:"left", property:"position_y", function:"y - x"});
 	
-	CREATE (adj:Adjective {word:"up", property:"position_z", function:"x"});
-	CREATE (adj:Adjective {word:"down", property:"position_z", function:"-x"});
-	CREATE (adj:Adjective {word:"upward", property:"position_z", function:"x"});
-	CREATE (adj:Adjective {word:"downward", property:"position_z", function:"-x"});
+	CREATE (adj:Adjective {word:"up", property:"position_z", function:"y + x"});
+	CREATE (adj:Adjective {word:"down", property:"position_z", function:"y - x"});
+	CREATE (adj:Adjective {word:"upward", property:"position_z", function:"y + x"});
+	CREATE (adj:Adjective {word:"downward", property:"position_z", function:"y - x"});
 
 	//colors
 	CREATE (adj:Adjective {word:"white", property:"color", value:"FFFFFF"});

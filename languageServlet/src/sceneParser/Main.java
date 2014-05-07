@@ -11,6 +11,10 @@ import java.util.Set;
 
 import javax.swing.text.html.HTMLDocument.Iterator;
 
+import de.congrace.exp4j.Calculable;
+import de.congrace.exp4j.ExpressionBuilder;
+import de.congrace.exp4j.UnknownFunctionException;
+import de.congrace.exp4j.UnparsableExpressionException;
 import neo4j.NeoDatabase;
 import se.lth.cs.semparser.corpus.Predicate;
 import se.lth.cs.semparser.corpus.Sentence;
@@ -54,15 +58,7 @@ public class Main {
 	}
 
 	private static Command makeCreate(Map<String, String> verb, Predicate rootPredicate) {
-		String itemToMakeArgument = "A1";
-		Set<Word> words = rootPredicate.getArgMap().keySet();
-		Word itemDescription = null;
-		for(Word word : words){
-			if(rootPredicate.getArgMap().get(word).equals(itemToMakeArgument)){
-				itemDescription = word;
-				break;
-			}
-		}
+		Word itemDescription = getArgumentHead(rootPredicate, "A1");
 		String[] possibleModels = appropriateModels(itemDescription);
 		if(possibleModels.length == 0)
 			return noModelFound;
@@ -77,15 +73,7 @@ public class Main {
 	}
 
 	private static Command makeRemove(Map<String, String> verb, Predicate rootPredicate) {
-		String affectedItemArgument = verb.get("item");
-		Set<Word> words = rootPredicate.getArgMap().keySet();
-		Word itemDescription = null;
-		for(Word word : words){
-			if(rootPredicate.getArgMap().get(word).equals(affectedItemArgument)) {
-				itemDescription = word;
-				break;
-			}
-		}
+		Word itemDescription = getArgumentHead(rootPredicate, "A1");
 		Item[] id = identify(itemDescription);
 		if(id.length == 0)
 			return noItemFound;
@@ -95,7 +83,78 @@ public class Main {
 	}
 
 	private static Command makeModify(Map<String, String> verb, Predicate rootPredicate) {
-		// TODO Auto-generated method stub
+		Item item = null;
+		Map<String, String> adjective = null;
+		String property = null;
+		String function = null;
+		String value = null;
+		Word object = getObject(rootPredicate);
+		Boolean creater = shouldCreate(object); 
+		if(creater == null){
+			return Command.notify("Grammatical error.");
+		} else if(creater) {	
+			//TODO Create new object
+		} else {			
+			Item[] items = identify(object);
+			if(items.length == 0)
+				return noItemFound;
+			if(items.length > 1)
+				return tooManyItemsFound;
+			item = items[0];
+		}
+		
+		property = verb.get("property");
+		if(property == null){
+			Word adj = getArgumentHead(rootPredicate, "A2");
+			adjective = database.getAdjective(adj.getLemma());
+			property = adjective.get("property");
+			function = adjective.get("function");
+			value = adjective.get("value");
+		}
+		if(value == null){
+			if(function == null)
+				function = verb.get("function");
+			Word adj = getArgumentHead(rootPredicate, "A2");
+			adjective = database.getAdjective(adj.getLemma());
+			value = adjective.get("value");
+		}
+		String objectValue = item.get(property);
+		if(objectValue == null)
+			return Command.notify("Illegal Property on Object.");
+		value = applyFunction(function, value, objectValue);
+
+		if(property == null || value == null)
+			return Command.notify("Grammatical error.");
+		return Command.modify(item.id, property, value);
+	}
+	
+	private static String applyFunction(String function, String value, String sourceValue) throws NumberFormatException {
+		if(function == null)
+			return value;
+		Calculable calc = null;
+		try {
+			calc = new ExpressionBuilder(function)
+					.withVariable("x", Double.valueOf(value))	
+					.withVariable("y", Double.valueOf(sourceValue)).build();
+		} catch (UnknownFunctionException | UnparsableExpressionException e) {
+			e.printStackTrace();
+		}
+		return Double.toString(calc.calculate());
+	}
+	
+	
+	private static Word getObject(Predicate rootPredicate) {
+		//Needs to be improved later
+		return getArgumentHead(rootPredicate, "A1");
+	}
+	
+	private static Word getArgumentHead(Predicate rootPredicate, String itemToMakeArgument) {
+		Set<Word> words = rootPredicate.getArgMap().keySet();
+		for(Word word : words){
+			if(rootPredicate.getArgMap().get(word).equals(itemToMakeArgument)){
+				return word;
+			}
+		}
 		return null;
 	}
 
@@ -162,16 +221,6 @@ public class Main {
 			default:
 				return false;
 		}
-	}
-	
-	/**
-	 * get id numbers of objects in the world that fit the description
-	 * @param itemDescription
-	 * @return
-	 */
-	private static int[] getIds(Word itemDescription) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 	
 	private static Item[] identify(Word item) {
