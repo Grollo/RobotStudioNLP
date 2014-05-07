@@ -8,11 +8,6 @@ import java.util.Map;
 public class Item {
 	
 	public int id;
-	public String model;
-	public Position position;
-	public Position rotation;
-	public float scale;
-	public String color;
 	public List<String> names;
 	
 	public Map<String, String> properties;
