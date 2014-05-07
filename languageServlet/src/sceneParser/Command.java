@@ -28,6 +28,6 @@ public class Command {
 		String toReturn = s[0];
 		for(int i = 1; i < s.length; i++)
 			toReturn += " " + s[i];
-		return toReturn;
+		return toReturn + "\n";
 	}
 }

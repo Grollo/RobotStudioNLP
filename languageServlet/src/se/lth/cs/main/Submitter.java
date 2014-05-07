@@ -62,7 +62,7 @@ public class Submitter extends HttpServlet {
 		for (Sentence parsedSentence : parsedSentences) {
 			ArrayList<Command> commands = Main.interpret(parsedSentence);
 			for(Command command : commands)
-				sb.append(command + "\n");
+				sb.append(command);
 		}
 		
 		return sb.toString();
