@@ -26,6 +26,7 @@ public class Main {
 	private final static Command tooManyItemsFound = Command.notify("Could apply to more than one item, please specify.");
 	private final static Command noModelFound = Command.notify("Could not find an model matching the description.");
 	private final static Command tooManyModels = Command.notify("Could apply to more than one model, please specify.");
+	private final static Command illegalProperty = Command.notify("Illegal Property on Object.");
 	private final static String noSuchObject = "Couldn't find an object named ";
 	private int activeAgentId = -1; // id of last referred to object, -1 if no such thing
 	private static NeoDatabase database = NeoDatabase.getDatabase();
@@ -102,9 +103,9 @@ public class Main {
 		String function = null;
 		String value = null;
 		Word object = getObject(rootPredicate);
-		Boolean creater = shouldCreate(object); 
+		Boolean creater = shouldCreate(object);
 		if(creater == null){
-			commands.add(Command.notify("Grammatical error."));
+			commands.add(grammarError);
 			return commands;
 		} else if(creater) {	
 			//TODO Create new object
@@ -138,13 +139,13 @@ public class Main {
 		}
 		String objectValue = item.get(property);
 		if(objectValue == null){
-			commands.add(Command.notify("Illegal Property on Object."));
+			commands.add(illegalProperty);
 			return commands;
 		}
 		value = applyFunction(function, value, objectValue);
 
 		if(property == null || value == null){
-			commands.add(Command.notify("Grammatical error."));
+			commands.add(grammarError);
 			return commands;
 		}
 		commands.add(Command.modify(item.id, property, value));
@@ -167,7 +168,7 @@ public class Main {
 	
 	
 	private static Word getObject(Predicate rootPredicate) {
-		//Needs to be improved later
+		// TODO: Needs to be improved later
 		return getArgumentHead(rootPredicate, "A1");
 	}
 	
@@ -261,7 +262,7 @@ public class Main {
 
 	/**
 	 * @param noun
-	 * @return list of ids of items the noun could be referring to
+	 * @return list of items the noun could be referring to
 	 */
 	private static Item[] possibleItems(String noun) {
 		Item[] items = database.getItems(noun);
