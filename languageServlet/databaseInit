@@ -60,11 +60,8 @@ CREATE (n:Noun {word:"robot"});
 	MATCH (model:Model) WHERE model.alias = "frida"
 		MATCH (noun:Noun) WHERE noun.word = "robot"
 		CREATE (noun)-[:MEANS]->(model);
-CREATE (noun:Noun {word:"all"})
-	MATCH (model:Model)
-	CREATE (noun)-[:MEANS]->(model);
-CREATE (noun:Noun {word:"everything"})
-	MATCH (model:Model)
+MATCH (model:Model)
+	CREATE (noun:Noun {word:"everything"})
 	CREATE (noun)-[:MEANS]->(model);
 
 
