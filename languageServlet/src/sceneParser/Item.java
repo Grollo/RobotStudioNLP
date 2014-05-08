@@ -9,7 +9,6 @@ public class Item {
 	
 	public int id;
 	public List<String> names;
-	
 	public Map<String, String> properties;
 	
 	public Item(int id){
