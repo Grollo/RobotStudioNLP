@@ -56,10 +56,11 @@ public interface Database {
 	
 	/** Creates a new item in the database.
 	 * 
-	 * @param itemType - the Type of item to be created.
+	 * @param id - the id of the item.
+	 * @param model - the Type of item to be created.
 	 * @return <code>true</code> if a item was created. Else returns <code>false</code>.
 	 */
-	public boolean createItem(Item item);
+	public boolean createItem(int id, String model);
 	
 	/** Removes an existing item from the database.
 	 * 
@@ -95,7 +96,8 @@ public interface Database {
 	/** Gets a Adjective from the database.
 	 * 
 	 * @param adjective - the adjective itself.
-	 * @return a Array where the first argument is the property and the second is the value.
+	 * @return A map where is the property is mapped the value. If no adjective
+	 * 		can be found, a empty map will be returned.
 	 */
 	public Map<String, String> getAdjective(String adjective);
 	

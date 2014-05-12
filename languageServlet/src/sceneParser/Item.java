@@ -33,4 +33,7 @@ public class Item {
 		}
 	}
 
+	public String toString() {
+		return Integer.toString(id);
+	}
 }

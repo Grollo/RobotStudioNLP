@@ -46,7 +46,7 @@ public class NeoDatabase implements Database{
 		params.put("$verb", verb);
 		params.put("$arg", argument);
 		params.put("$value", reference);
-		QueryResult<Map<String, Object>> result = engine.query(
+		engine.query(
 				"MATCH (v:Verb) WHERE v.word = {$verb} SET v.{$arg} = {$value};", params);
 		return true;
 	}
@@ -56,7 +56,7 @@ public class NeoDatabase implements Database{
 		params.put("$adj", adjective);
 		params.put("$property", property);
 		params.put("$value", value);
-		QueryResult<Map<String, Object>> result = engine.query(
+		engine.query(
 				"CREATE (a:Adjective {word:{$adj}, property:{$property}, value:{$value}});", params);
 		return true;
 	}
@@ -65,7 +65,7 @@ public class NeoDatabase implements Database{
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("$alias", alias);
 		params.put("$filename", filename);
-		QueryResult<Map<String, Object>> result = engine.query(
+		engine.query(
 				"CREATE (m:Model {alias:{$alias}, filename:{$filename}});", params);
 		return true;
 	}
@@ -73,7 +73,7 @@ public class NeoDatabase implements Database{
 	public boolean addNoun(String noun) {
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("$word", noun);
-		QueryResult<Map<String, Object>> result = engine.query(
+		engine.query(
 				"CREATE (n:Noun {word:{$word}});", params);
 		return true;
 	}
@@ -82,19 +82,41 @@ public class NeoDatabase implements Database{
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("$word", word);
 		params.put("$alias", model);
-		QueryResult<Map<String, Object>> result = engine.query(
+		engine.query(
 				"MATCH (n:Noun), (m:Model) WHERE n.word = {$word} AND m.alias = {$alias} " +
 				"CREATE (n)-[:MEANS]->(m);", params);
 		return true;
 	}
 
-	public boolean createItem(Item item) {
+	public boolean createItem(int id, String model) {
 		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("$id", item.id);
-		QueryResult<Map<String, Object>> result = engine.query("Create (i:Item {id:{$id}, color:{$color}," +
-				"position_x:{$pos x}, position_y:{$pos y}, position_z:{$pos z}, scale:{$scale}," + 
-				"rotation_x:{$rot x}, rotation_y:{$rot y}, rotation_z:{$rot z}})" +
-				"MATCH (M:Model) WHERE m.alias = {$model} CREATE (i)-[:MODEL]->(m);", params);
+		params.put("$alias", model);
+		QueryResult<Map<String, Object>> result = engine.query(
+				"MATCH (m:Model)-[:PROTOTYPE]->(p:Prototype)" +
+				"WHERE m.alias = {$alias} RETURN p;", params);
+		params.clear();
+		RestNode node = null;
+		for (Map<String, Object> map2 : result) {
+			Object o = map2.get("p");
+			node = (RestNode) o;
+		}
+		StringBuilder properties = new StringBuilder();
+		int i = 0;
+		for (String key : node.getPropertyKeys()) {
+			properties.append(", " + key + ": " + "{$prop"+i+"}");
+			params.put("$prop"+i , (String) node.getProperty(key));
+			i++;
+		}
+		params.put("$id", id);
+		params.put("$alias", model);
+		engine.query(
+				"MATCH (m:Model) WHERE m.alias = {$alias} " +
+				"CREATE (i:Item {id: {$id}" + properties.toString()+ "}) " +
+				"CREATE (i)-[:MODEL]->(m);", params);
+		engine.query(
+				"MATCH (n:Noun), (m:Model), (i:Item) WHERE m.alias = {$alias} " +
+				"AND i.id = {$id} AND (n)-[:MEANS]->(m) " +
+				"CREATE (n)-[:NAME]->(i);", params);
 		return true;
 	}
 	
@@ -102,8 +124,8 @@ public class NeoDatabase implements Database{
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("$id", itemId);
 		params.put("$name", name);
-		QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item) " +
-				"WHERE i.id = {$id} CREATE UNIQUE (n:Noun {word:{$name}}) CREATE (n)-[:NAME]->(i);", params);
+		engine.query("MATCH (i:Item) " +
+				"WHERE i.id = {$id} CREATE UNIQUE (n:Noun {word:{$name}})-[:NAME]->(i);", params);
 		return true;
 	}
 	
@@ -111,7 +133,7 @@ public class NeoDatabase implements Database{
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("$id", itemId);
 		params.put("$name", name);
-		QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item),(n:Noun) " +
+		engine.query("MATCH (i:Item),(n:Noun) " +
 				"WHERE i.id = {$id} AND n.word = {$name} MATCH (n)-[r:NAME]->(i) REMOVE r;", params);
 		return true;
 	}
@@ -119,23 +141,22 @@ public class NeoDatabase implements Database{
 	public boolean removeItem(Item item) {
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("$id", item.id);
-		QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item) WHERE i.id = {$id} " +
-				"OPTIONAL MATCH (n)-[r]-() REMOVE r,i;", params);
+		engine.query("MATCH (i:Item) WHERE i.id = {$id} " +
+				"OPTIONAL MATCH (i)-[r]-() DELETE r,i;", params);
 		return true;
 	}
 
 	public boolean modifyItem(Item item, String attribute, String value) {
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("$id", item.id);
-		params.put("$attr", attribute);
 		params.put("$value", value);
 		if(attribute.equals(ItemProperties.MODEL.toString())){
-			QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item),(m:Model) WHERE i.id = {$id} " +
+			engine.query("MATCH (i:Item),(m:Model) WHERE i.id = {$id} " +
 					"AND m.alias = {$value} MATCH (i)-[r:MODEL]->()"+ 
-					"REMOVE r CREATE (i)-[:MODEL]-(m);", params);
+					"REMOVE r CREATE (i)-[:MODEL]->(m);", params);
 		}else{
-			QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item) WHERE i.id = {$id} " +
-					"SET i.{$attr} = {$value};", params);
+			engine.query("MATCH (i:Item) WHERE i.id = {$id} " +
+					"SET i."+ attribute +" = {$value};", params);
 		}
 		return true;
 	}
@@ -151,11 +172,30 @@ public class NeoDatabase implements Database{
 			Item item = new Item((int) node.getProperty("id"));
 			items.add(item);
 			for (String key : node.getPropertyKeys()) {
-				item.properties.put(key, (String) node.getProperty(key));
+				if(!key.equals("id"))
+						item.properties.put(key, (String) node.getProperty(key));
 			}
 			getNames(item);
 		}
 		return items.toArray(new Item[0]);
+	}
+	
+	public Item getItem(int id) {
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$id", id);
+		QueryResult<Map<String, Object>> result = engine.query("MATCH (i:Item) WHERE i.id = {$id} " +
+				"RETURN i;", params);
+		Item item = null;
+		for (Map<String, Object> map2 : result) {
+			RestNode node = (RestNode) map2.get("i");
+			item = new Item(id);
+			for (String key : node.getPropertyKeys()) {
+				if(!key.equals("id"))
+						item.properties.put(key, (String) node.getProperty(key));
+			}
+			getNames(item);
+		}
+		return item;
 	}
 	
 	private void getNames(Item item) {
@@ -177,7 +217,7 @@ public class NeoDatabase implements Database{
 		ArrayList<String> models = new ArrayList<String>();
 		for (Map<String, Object> map2 : result) {
 			RestNode node = (RestNode) map2.get("m");
-			models.add((String) node.getProperty("filename"));
+			models.add((String) node.getProperty("alias"));
 		}
 		return models.toArray(new String[0]);
 	}
@@ -189,10 +229,12 @@ public class NeoDatabase implements Database{
 		QueryResult<Map<String, Object>> result = engine.query("match (a:Adjective) where a.word = {$word} return a;", params);
 		RestNode node = null;
 		for (Map<String, Object> map2 : result) {
-			node = (RestNode) map2.get("v");
+			node = (RestNode) map2.get("a");
 		}
-		for (String key : node.getPropertyKeys()) {			
-			map.put(key, node.getProperty(key).toString());
+		if (node != null)  {
+			for (String key : node.getPropertyKeys()) {			
+				map.put(key, node.getProperty(key).toString());
+			}
 		}
 		return map;
 	}
@@ -211,6 +253,22 @@ public class NeoDatabase implements Database{
 			map.put(key, node.getProperty(key).toString());
 		}
 		return map;
+	}
+	
+	public String getProperty(String property){
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("$property", property);
+		QueryResult<Map<String, Object>> result = engine.query(
+				"MATCH (p:Property) WHERE p.word = {$property} RETURN p;", params);
+		RestNode node = null;
+		for (Map<String, Object> map2 : result) {
+			Object o = map2.get("p");
+			node = (RestNode) o;
+		}
+		if(node == null){
+			return null;
+		}
+		return (String) node.getProperty("property");
 	}
 
 	public boolean connect(String urlPath) {

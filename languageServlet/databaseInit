@@ -9,6 +9,7 @@ CREATE INDEX ON :Noun(word);
 CREATE INDEX ON :Verb(word);
 CREATE INDEX ON :Adjective(word);
 CREATE INDEX ON :Item(id);
+CREATE INDEX ON :Property(word);
 
 //Create models and match aliases
 CREATE (model:Model {alias:"irb120", filename:"irb120.model"})
@@ -36,8 +37,8 @@ CREATE (model:Model {alias:"workpiece", filename:"workpiece.model"})
 CREATE (model:Model {alias:"pcb", filename:"pcb.model"})
 	CREATE (noun:Noun {word:"pcb"})
 	CREATE (noun)-[:MEANS]->(model);
-CREATE (model:Model {alias:"shielcan", filename:"sheilcan.model"})
-	CREATE (noun:Noun {word:"shielcan"})
+CREATE (model:Model {alias:"shieldcan", filename:"sheilcan.model"})
+	CREATE (noun:Noun {word:"shieldcan"})
 	CREATE (noun)-[:MEANS]->(model);
 CREATE (model:Model {alias:"camera", filename:"camera.model"})
 	CREATE (noun:Noun {word:"camera"})
@@ -45,7 +46,65 @@ CREATE (model:Model {alias:"camera", filename:"camera.model"})
 CREATE (model:Model {alias:"camera socket", filename:"cameraSocket.model"})
 	CREATE (noun:Noun {word:"camera socket"})
 	CREATE (noun)-[:MEANS]->(model);
-	
+
+//Create prototypes of models.
+MATCH (model:Model) WHERE model.alias = "irb120"
+	CREATE (p:Prototype { color:"808080",
+			position_x:"0", position_y:"0", position_z:"0",
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "irb124"
+	CREATE (p:Prototype { color:"808080",
+			position_x:"0", position_y:"0", position_z:"0",
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "irb2400"
+	CREATE (p:Prototype { color:"808080",
+			position_x:"0", position_y:"0", position_z:"0",
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "frida"
+	CREATE (p:Prototype { color:"808080",
+			position_x:"0", position_y:"0", position_z:"0",
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "tray"
+	CREATE (p:Prototype { color:"808080", weight:"1",
+			position_x:"0", position_y:"0", position_z:"0",
+			scale_x:"1", scale_y:"1", scale_x:"1",
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "fixture"
+	CREATE (p:Prototype { color:"808080", weight:"1", scale_z:"1", 
+			position_x:"0", position_y:"0", position_z:"0", scale:"1", 
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "workpiece"
+	CREATE (p:Prototype { color:"808080", weight:"1", 
+			position_x:"0", position_y:"0", position_z:"0", scale:"1", 
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "pcb"
+	CREATE (p:Prototype { color:"808080", weight:"1", 
+			position_x:"0", position_y:"0", position_z:"0", scale:"1", 
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "shieldcan"
+	CREATE (p:Prototype { color:"808080", weight:"1", 
+			position_x:"0", position_y:"0", position_z:"0", scale:"1", 
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "camera"
+	CREATE (p:Prototype { color:"808080", weight:"1", 
+			position_x:"0", position_y:"0", position_z:"0", scale:"1", 
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+MATCH (model:Model) WHERE model.alias = "camera socket"
+	CREATE (p:Prototype { color:"808080", weight:"1", 
+			position_x:"0", position_y:"0", position_z:"0", scale:"1", 
+			rotation_x:"0", rotation_y:"0", rotation_z:"0"})
+	Create (model)-[:PROTOTYPE]->(p);
+
 //Create alternative references to models and link them
 CREATE (n:Noun {word:"robot"});
 	MATCH (model:Model) WHERE model.alias = "irb120"
@@ -63,17 +122,20 @@ CREATE (n:Noun {word:"robot"});
 MATCH (model:Model)
 	CREATE (noun:Noun {word:"everything"})
 	CREATE (noun)-[:MEANS]->(model);
+MATCH (model:Model)
+	CREATE (noun:Noun {word:"object"})
+	CREATE (noun)-[:MEANS]->(model);
 
 
 // Verbs
 CREATE (verb:Verb {word:"create", does:"create"});
 
-CREATE (verb:Verb {word:"add", does:"modify"});
 CREATE (verb:Verb {word:"alter", does:"modify"});
 CREATE (verb:Verb {word:"change", does:"modify"});
 CREATE (verb:Verb {word:"make", does:"modify"});
 CREATE (verb:Verb {word:"modify", does:"modify"});
 CREATE (verb:Verb {word:"rotate", does:"modify", property:"rotation"});
+CREATE (verb:Verb {word:"add", does:"modify", property:"position"});
 CREATE (verb:Verb {word:"move", does:"modify", property:"position"});
 CREATE (verb:Verb {word:"place", does:"modify", property:"position"});
 CREATE (verb:Verb {word:"put", does:"modify", property:"position"});
@@ -84,9 +146,22 @@ CREATE (verb:Verb {word:"label", does:"modify", property:"name"});
 CREATE (verb:Verb {word:"name", does:"modify", property:"name"});
 CREATE (verb:Verb {word:"color", does:"modify", property:"color"});
 CREATE (verb:Verb {word:"paint", does:"modify", property:"color"});
+
 CREATE (verb:Verb {word:"clear", does:"remove"});
+CREATE (verb:Verb {word:"delete", does:"remove"});
 CREATE (verb:Verb {word:"dispatch", does:"remove"});
 CREATE (verb:Verb {word:"remove", does:"remove"});
+
+//Properties
+CREATE (p:Property {word:"color" ,property:"color"});
+CREATE (p:Property {word:"weight" ,property:"weight"});
+CREATE (p:Property {word:"size" ,property:"scale"});
+CREATE (p:Property {word:"scale" ,property:"scale"});
+CREATE (p:Property {word:"height" ,property:"scale_z"});
+CREATE (p:Property {word:"width" ,property:"scale_y"});
+CREATE (p:Property {word:"length" ,property:"scale_x"});
+CREATE (p:Property {word:"position" ,property:"position"});
+CREATE (p:Property {word:"direction" ,property:"rotation"});
 
 // Adjectives
 	//positions
@@ -104,7 +179,11 @@ CREATE (verb:Verb {word:"remove", does:"remove"});
 	CREATE (adj:Adjective {word:"down", property:"position_z", function:"y - x"});
 	CREATE (adj:Adjective {word:"upward", property:"position_z", function:"y + x"});
 	CREATE (adj:Adjective {word:"downward", property:"position_z", function:"y - x"});
-
+	
+	CREATE (adj:Adjective {word:"behind", property:"position_x", function:"z - y"});
+	CREATE (adj:Adjective {word:"front", property:"position_x", function:"z + y"});
+	CREATE (adj:Adjective {word:"next", property:"position_y", function:"z + y"});
+	
 	//colors
 	CREATE (adj:Adjective {word:"white", property:"color", value:"FFFFFF"});
 	CREATE (adj:Adjective {word:"grey", property:"color", value:"808080"});
@@ -116,3 +195,8 @@ CREATE (verb:Verb {word:"remove", does:"remove"});
 	CREATE (adj:Adjective {word:"purple", property:"color", value:"FF00FF"});
 	CREATE (adj:Adjective {word:"cyan", property:"color", value:"00FFFF"});
 	CREATE (adj:Adjective {word:"pink", property:"color", value:"F280A1"});
+	
+	//other
+	CREATE (adj:Adjective {word:"smaller", property:"scale", function:"y / x"});
+	CREATE (adj:Adjective {word:"bigger", property:"scale", function:"y * x"});
+	CREATE (adj:Adjective {word:"larger", property:"scale", function:"y * x"});

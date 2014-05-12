@@ -2,14 +2,11 @@ package sceneParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import javax.swing.text.html.HTMLDocument.Iterator;
 
 import de.congrace.exp4j.Calculable;
 import de.congrace.exp4j.ExpressionBuilder;
@@ -28,8 +25,9 @@ public class Main {
 	private final static Command tooManyModels = Command.notify("Could apply to more than one model, please specify.");
 	private final static Command illegalProperty = Command.notify("Illegal Property on Object.");
 	private final static String noSuchObject = "Couldn't find an object named ";
-	private int activeAgentId = -1; // id of last referred to object, -1 if no such thing
+	private static int activeAgentId = -1; // id of last referred to object, -1 if no such thing
 	private static NeoDatabase database = NeoDatabase.getDatabase();
+	private static final UnitConverter unitConverter = new UnitConverter();
 	private static int nextId = 0;
 
 	public static ArrayList<Command> interpret(Sentence parsedSentence) {
@@ -69,7 +67,8 @@ public class Main {
 			return commands;
 		}
 		int id = getNextId();
-		commands.add(Command.create(id, possibleModels[0]));
+		commands.add(Command.create(database, id, possibleModels[0]));
+		activeAgentId = id;
 		return commands;
 	}
 
@@ -80,35 +79,13 @@ public class Main {
 	private static ArrayList<Command> makeRemove(Map<String, String> verb, Predicate rootPredicate) {
 		ArrayList<Command> commands = new ArrayList<Command>();
 		Word itemDescription = getArgumentHead(rootPredicate, "A1");
-		Item[] id = identify(itemDescription);
-		if(id.length == 0){
-			commands.add(noItemFound);
-			return commands;
-		}
-		if(id.length > 1){
-			commands.add(tooManyItemsFound);
-			return commands;
-		}
-		commands.add(Command.remove(id[0].id));
-		return commands;
-	}
-
-	private static ArrayList<Command> makeModify(Map<String, String> verb, Predicate rootPredicate) {
-		ArrayList<Command> commands = new ArrayList<Command>();
-		Item item = null;
-		Map<String, String> adjective = null;
-		String property = null;
-		String function = null;
-		String value = null;
-		Word object = getObject(rootPredicate);
-		Boolean creater = shouldCreate(object);
-		if(creater == null){
-			commands.add(grammarError);
-			return commands;
-		} else if(creater) {	
-			//TODO Create new object
-		} else {			
-			Item[] items = identify(object);
+		int det = analyzeDeterminer(itemDescription);
+		Item[] items = identify(itemDescription);
+		if(det == APPLY_ALL){
+			for (Item item : items) {
+				commands.add(Command.remove(database, item));
+			}
+		}else {			
 			if(items.length == 0){
 				commands.add(noItemFound);
 				return commands;
@@ -117,47 +94,125 @@ public class Main {
 				commands.add(tooManyItemsFound);
 				return commands;
 			}
-			item = items[0];
+			commands.add(Command.remove(database, items[0]));
+		}
+		activeAgentId = -1;
+		return commands;
+	}
+
+	private static ArrayList<Command> makeModify(Map<String, String> verb, Predicate rootPredicate) {
+		ArrayList<Command> commands = new ArrayList<Command>();
+		Item[] items = null;
+		Map<String, String> adjective = null;
+		String property = null;
+		String function = null;
+		String value = null;
+		Word object = getObject(rootPredicate);
+		
+		int creater = analyzeDeterminer(object);
+		switch (creater) {
+			case CREATE_NO_TAG: {
+				commands.add(grammarError);
+				return commands;
+			} case CREATE_TRUE: {
+				String[] possibleModels = appropriateModels(object);
+				if(possibleModels.length == 0){
+					commands.add(noModelFound);
+					return commands;
+				}
+				if(possibleModels.length > 1){
+					commands.add(tooManyModels);
+					return commands;
+				}
+				int id = getNextId();
+				commands.add(Command.create(database, id, possibleModels[0]));
+				activeAgentId = id;
+				items = new Item[]{database.getItem(id)};
+				break;
+			} case CREATE_FALSE: {
+				Item[] itemps = identify(object);
+				if(itemps.length == 0){
+					commands.add(noItemFound);
+					return commands;
+				}
+				if(itemps.length > 1){
+					commands.add(tooManyItemsFound);
+					return commands;
+				}
+				items = itemps;
+				break;
+			} case APPLY_ALL: {
+				items = identify(object);
+				break;
+			}
 		}
 		
 		property = verb.get("property");
+		if(property == null) {
+			Word word = getArgumentHead(rootPredicate, "A1");
+			if(word.isPred()) {
+				property = database.getProperty(word.getLemma());
+			}
+		}
 		if(property == null){
-			Word adj = getArgumentHead(rootPredicate, "A2");
-			adjective = database.getAdjective(adj.getLemma());
-			property = adjective.get("property");
-			function = adjective.get("function");
-			value = adjective.get("value");
+			Word adj = getAdjective(rootPredicate);
+			if(adj != null){				
+				adjective = database.getAdjective(adj.getLemma());
+				property = adjective.get("property");
+				function = adjective.get("function");
+				value = adjective.get("value");
+			}
 		}
 		if(value == null){
 			if(function == null)
 				function = verb.get("function");
-			Word adj = getArgumentHead(rootPredicate, "A2");
-			adjective = database.getAdjective(adj.getLemma());
-			value = adjective.get("value");
+			Word adj = getAdjective(rootPredicate);
+			if(adj != null){				
+				if(property.equals("name")){
+					value = adj.getLemma();
+				}else{				
+					adjective = database.getAdjective(adj.getLemma());
+					value = adjective.get("value");
+				}
+			}
 		}
-		String objectValue = item.get(property);
-		if(objectValue == null){
-			commands.add(illegalProperty);
-			return commands;
+		
+		for (Item item : items) {
+			String objectValue = item.get(property);
+			if(objectValue == null && !property.equals("name") && !property.equals("model")){
+				commands.add(illegalProperty);
+				return commands;
+			}
+			
+			if(property == null || value == null){
+				commands.add(grammarError);
+				return commands;
+			}	
 		}
-		value = applyFunction(function, value, objectValue);
-
-		if(property == null || value == null){
-			commands.add(grammarError);
-			return commands;
+		//Exceptions are not allowed to be thrown between this comment and return
+		for (Item item : items) {
+			if(property.equals("name")){
+				database.addName(item.id, value);
+			}else {			
+				String objectValue = item.get(property);
+				value = applyFunction(function, value, objectValue, "0");
+				commands.add(Command.modify(database, item, property, value));
+			}
 		}
-		commands.add(Command.modify(item.id, property, value));
+		
+		activeAgentId = items[0].id;
 		return commands;
 	}
 	
-	private static String applyFunction(String function, String value, String sourceValue) throws NumberFormatException {
+	private static String applyFunction(String function, String value, String sourceValue, String targetValue) throws NumberFormatException {
 		if(function == null)
 			return value;
 		Calculable calc = null;
 		try {
 			calc = new ExpressionBuilder(function)
 					.withVariable("x", Double.valueOf(value))	
-					.withVariable("y", Double.valueOf(sourceValue)).build();
+					.withVariable("y", Double.valueOf(sourceValue))
+					.withVariable("z", Double.valueOf(targetValue)).build();
 		} catch (UnknownFunctionException | UnparsableExpressionException e) {
 			e.printStackTrace();
 		}
@@ -166,8 +221,39 @@ public class Main {
 	
 	
 	private static Word getObject(Predicate rootPredicate) {
+		Word word = getArgumentHead(rootPredicate, "A1");
+		while(word.isPred()){
+			Predicate predicate = (Predicate) word;
+			word = getArgumentHead(predicate, "A1");
+		}
+		while(!isObject(word) && word.getChildren().size() == 1){
+			word = word.getChildren().toArray(new Word[0])[0];
+		}
+		return word;
+	}
+	
+	private static boolean isObject(Word word) {
+		switch(word.getPOS()){
+			case "NN":
+			case "NNS":
+			case "NNP":
+			case "NNPS":
+				return true;
+			default:
+				return false;
+		}
+	}
+	
+	private static Word getAdjective(Predicate rootPredicate) {
+		Word word = getArgumentHead(rootPredicate, "A2");
+		if(word != null && word.getPOS().equals("TO")){
+			for(Word w : word.getChildren()){
+				word = w;
+				break;
+			}
+		}
 		// TODO: Needs to be improved later
-		return getArgumentHead(rootPredicate, "A1");
+		return word;
 	}
 	
 	private static Word getArgumentHead(Predicate rootPredicate, String itemToMakeArgument) {
@@ -234,21 +320,41 @@ public class Main {
 		return words;
 	}
 	
-	private static Boolean shouldCreate(Word item){
+	public static final int CREATE_NO_TAG = 0;
+	public static final int CREATE_TRUE = 1;
+	public static final int CREATE_FALSE = 2;
+	public static final int APPLY_ALL = 3;
+	
+	private static int analyzeDeterminer(Word item){
+		switch(item.getLemma()) {
+			case "all":
+			case "everything":
+				return APPLY_ALL;
+		}
 		List<String> dts = getSubtags(item, "DT");
 		if(dts.size() > 1)
-			return null;
+			return CREATE_NO_TAG;
+		else if (dts.size() < 1)
+			return CREATE_FALSE;
 		switch(dts.get(0)){
 			case "a":
 			case "an":
-				return true;
+			case "another":
+				return CREATE_TRUE;
+			case "every":
+			case "all":
+				return APPLY_ALL;
 			case "the":
+			case "this":
 			default:
-				return false;
+				return CREATE_FALSE;
 		}
 	}
 	
 	private static Item[] identify(Word item) {
+		if(item.getLemma().equals("it")) {
+			return new Item[]{database.getItem(activeAgentId)};
+		}
 		Item[] items = possibleItems(item.getLemma());
 		Map<String, String> adjectives = extractAdjectives(item);
 		List<String> names = extractNames(item);
