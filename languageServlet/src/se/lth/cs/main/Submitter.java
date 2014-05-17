@@ -39,6 +39,9 @@ public class Submitter extends HttpServlet {
 
 	public List<String> sentenceDetector(String narrative) {
 		String[] sentences = narrative.split("\\.");
+		for (int i = 0; i < sentences.length; i++) {
+			sentences[i] += ".";
+		}
 		return Arrays.asList(sentences);
 	}
 

@@ -138,17 +138,17 @@ public class NeoDatabase implements Database{
 		return true;
 	}
 
-	public boolean removeItem(Item item) {
+	public boolean removeItem(int itemId) {
 		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("$id", item.id);
+		params.put("$id", itemId);
 		engine.query("MATCH (i:Item) WHERE i.id = {$id} " +
 				"OPTIONAL MATCH (i)-[r]-() DELETE r,i;", params);
 		return true;
 	}
 
-	public boolean modifyItem(Item item, String attribute, String value) {
+	public boolean modifyItem(int itemId, String attribute, String value) {
 		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("$id", item.id);
+		params.put("$id", itemId);
 		params.put("$value", value);
 		if(attribute.equals(ItemProperties.MODEL.toString())){
 			engine.query("MATCH (i:Item),(m:Model) WHERE i.id = {$id} " +

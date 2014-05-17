@@ -2,6 +2,7 @@ package sceneParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ public class Main {
 	private static int activeAgentId = -1; // id of last referred to object, -1 if no such thing
 	private static NeoDatabase database = NeoDatabase.getDatabase();
 	private static final UnitConverter unitConverter = new UnitConverter();
+	private static final NumberParser numberParser = new NumberParser();
 	private static int nextId = 0;
 
 	public static ArrayList<Command> interpret(Sentence parsedSentence) {
@@ -51,6 +53,16 @@ public class Main {
 				}
 			}
 		}
+		boolean shouldExecute = true;
+		for (Command command : commands) {
+			if(command.isNotify()){
+				shouldExecute = false;
+				break;
+			}
+		}
+		if(shouldExecute) for (Command command : commands) {
+			command.execute(database);
+		}
 		return commands;
 	}
 
@@ -66,9 +78,26 @@ public class Main {
 			commands.add(tooManyModels);
 			return commands;
 		}
-		int id = getNextId();
-		commands.add(Command.create(database, id, possibleModels[0]));
-		activeAgentId = id;
+		int times = 1;
+		if(hasSubtag(itemDescription, "CD")){
+			ArrayList<Word> list = new ArrayList<>();
+			getAllSubtags(list, itemDescription, "CD");
+			Collections.sort(list);
+			String[] nbrs = new String[list.size()];
+			int i = 0;
+			for (Word word: list) {
+				nbrs[i] = word.getLemma();
+				i++;
+			}
+			times = (int) numberParser.parse(nbrs);
+		}
+		int id = -1;
+		for (int i = 0; i < times; i++) {
+			id = getNextId();			
+			commands.add(Command.create(id, possibleModels[0]));
+		}
+		if(times > 1)
+			activeAgentId = id;
 		return commands;
 	}
 
@@ -83,7 +112,7 @@ public class Main {
 		Item[] items = identify(itemDescription);
 		if(det == APPLY_ALL){
 			for (Item item : items) {
-				commands.add(Command.remove(database, item));
+				commands.add(Command.remove(item));
 			}
 		}else {			
 			if(items.length == 0){
@@ -94,15 +123,18 @@ public class Main {
 				commands.add(tooManyItemsFound);
 				return commands;
 			}
-			commands.add(Command.remove(database, items[0]));
+			commands.add(Command.remove(items[0]));
 		}
 		activeAgentId = -1;
 		return commands;
 	}
 
+	private static final String[] POSITIONS = new String[]{"position_x", "position_y", "position_z"};
+	
 	private static ArrayList<Command> makeModify(Map<String, String> verb, Predicate rootPredicate) {
 		ArrayList<Command> commands = new ArrayList<Command>();
 		Item[] items = null;
+		Item[] referenceObjects = null;
 		Map<String, String> adjective = null;
 		String property = null;
 		String function = null;
@@ -125,7 +157,7 @@ public class Main {
 					return commands;
 				}
 				int id = getNextId();
-				commands.add(Command.create(database, id, possibleModels[0]));
+				commands.add(Command.create(id, possibleModels[0]));
 				activeAgentId = id;
 				items = new Item[]{database.getItem(id)};
 				break;
@@ -163,6 +195,44 @@ public class Main {
 				value = adjective.get("value");
 			}
 		}
+		if(property.equals("position")){
+			//TODO
+			Word adj = getAdjective(rootPredicate);
+			if(adj != null){				
+				adjective = database.getAdjective(adj.getLemma());
+				property = adjective.get("property");
+				function = adjective.get("function");
+				value = adjective.get("value");
+
+				if(value == null){
+					Word w = adj;
+					do {
+						w = getWord(w.getChildren().iterator().next());
+					}while(!isObject(w));
+					Item[] refs = identify(w);
+					if(refs.length == 0){
+						commands.add(noItemFound);
+						return commands;
+					}
+					if(refs.length > 1){
+						commands.add(tooManyItemsFound);
+						return commands;
+					}
+					Item ref = refs[0];
+					referenceObjects = new Item[]{ref};
+					
+					for (String posProperty : POSITIONS) {
+						if(posProperty.equals(property)){
+							value = "1";
+						}else{							
+							commands.add(Command.modify(items[0], posProperty, ref.get(posProperty)));
+						}
+					}
+				}
+			}
+			
+			
+		}
 		if(value == null){
 			if(function == null)
 				function = verb.get("function");
@@ -172,6 +242,8 @@ public class Main {
 					value = adj.getLemma();
 				}else{				
 					adjective = database.getAdjective(adj.getLemma());
+					if(function == null)
+						function = adjective.get("function");
 					value = adjective.get("value");
 				}
 			}
@@ -195,8 +267,12 @@ public class Main {
 				database.addName(item.id, value);
 			}else {			
 				String objectValue = item.get(property);
-				value = applyFunction(function, value, objectValue, "0");
-				commands.add(Command.modify(database, item, property, value));
+				String referenceValue = "0";
+				if (referenceObjects != null){					
+					referenceValue = referenceObjects[0].get(property);
+				}
+				value = applyFunction(function, value, objectValue, referenceValue);
+				commands.add(Command.modify(item, property, value));
 			}
 		}
 		
@@ -246,13 +322,24 @@ public class Main {
 	
 	private static Word getAdjective(Predicate rootPredicate) {
 		Word word = getArgumentHead(rootPredicate, "A2");
-		if(word != null && word.getPOS().equals("TO")){
-			for(Word w : word.getChildren()){
-				word = w;
-				break;
+		if(word == null){
+			//TODO
+		}
+		word = getWord(word);
+		return word;
+	}
+	
+	private static Word getWord(Word word){
+		if(word == null)
+			return null;
+		if (word.getChildren().size() == 1) {
+			switch(word.getLemma()){
+			case "in":
+			case "of":
+			case "to":
+				return getWord(word.getChildren().iterator().next());
 			}
 		}
-		// TODO: Needs to be improved later
 		return word;
 	}
 	
@@ -307,6 +394,11 @@ public class Main {
 		}
 		
 		return models;
+	}
+	
+
+	private static boolean hasSubtag(Word word, String tag){
+		return getSubtags(word, tag).size() > 0;
 	}
 	
 	/**@return All words with matching <code>tag</code> from one level beneath <code>item</code>.*/
@@ -412,6 +504,16 @@ public class Main {
 		List<String> values = new ArrayList<String>();
 		getAllNames(values, item);
 		return values;
+	}
+	
+	/**@return All words with matching <code>tag</code> from all levels beneath <code>item</code>.*/
+	private static void getAllSubtags(List<Word> values, Word word, String tag) {
+		if(word.getPOS().equals(tag)) {
+			values.add(word);
+		}
+		for(Word child : word.getChildren()) {
+			getAllSubtags(values, child, tag);
+		}
 	}
 	
 	/**@return All words with matching <code>tag</code> from all levels beneath <code>item</code>.*/

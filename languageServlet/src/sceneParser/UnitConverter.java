@@ -7,6 +7,10 @@ public class UnitConverter {
 
 	public final Map<String, Double> converter = new HashMap<>();
 	
+	public boolean isUnit(String unit){
+		return converter.containsKey(unit);
+	}
+	
 	public double convert(double value, String unit) {
 		return value * converter.get(unit);
 	}
@@ -14,6 +18,8 @@ public class UnitConverter {
 	public UnitConverter() {
 		//Lengh
 			//SI
+			converter.put("km", 1000d);
+			converter.put("kilometer", 1000d);
 			converter.put("m", 1d);
 			converter.put("meter", 1d);
 			converter.put("dm", 0.1);

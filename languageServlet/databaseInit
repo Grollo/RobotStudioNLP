@@ -164,7 +164,7 @@ CREATE (p:Property {word:"position" ,property:"position"});
 CREATE (p:Property {word:"direction" ,property:"rotation"});
 
 // Adjectives
-	//positions
+	//positions; x = value, y = original value of object, z = value of reference object.  
 	CREATE (adj:Adjective {word:"north", property:"position_x", function:"y + x"});
 	CREATE (adj:Adjective {word:"west", property:"position_y", function:"y + x"});
 	CREATE (adj:Adjective {word:"south", property:"position_x", function:"y - x"});
@@ -180,9 +180,10 @@ CREATE (p:Property {word:"direction" ,property:"rotation"});
 	CREATE (adj:Adjective {word:"upward", property:"position_z", function:"y + x"});
 	CREATE (adj:Adjective {word:"downward", property:"position_z", function:"y - x"});
 	
-	CREATE (adj:Adjective {word:"behind", property:"position_x", function:"z - y"});
-	CREATE (adj:Adjective {word:"front", property:"position_x", function:"z + y"});
-	CREATE (adj:Adjective {word:"next", property:"position_y", function:"z + y"});
+	CREATE (adj:Adjective {word:"behind", property:"position_x", function:"z - x"});
+	CREATE (adj:Adjective {word:"front", property:"position_x", function:"z + x"});
+	CREATE (adj:Adjective {word:"next", property:"position_y", function:"z + x"});
+	CREATE (adj:Adjective {word:"on", property:"position_z", function:"z + x"});
 	
 	//colors
 	CREATE (adj:Adjective {word:"white", property:"color", value:"FFFFFF"});

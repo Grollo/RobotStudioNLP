@@ -67,7 +67,7 @@ public interface Database {
 	 * @param item - the item to be removed.
 	 * @return <code>true</code> if the item was removed. Else returns <code>false</code>.
 	 */
-	public boolean removeItem(Item item);
+	public boolean removeItem(int itemId);
 	
 	/** Sets the specified attribute of the specified item to the specified
 	 *  value,
@@ -77,7 +77,7 @@ public interface Database {
 	 * @param value - the value to be assigned.
 	 * @return <code>true</code> if the modification was successful. Else returns <code>false</code>.
 	 */
-	public boolean modifyItem(Item item, String attribute, String value);
+	public boolean modifyItem(int itemId, String attribute, String value);
 	
 	/** Gets items from the database.
 	 * 
