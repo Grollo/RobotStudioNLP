@@ -119,6 +119,9 @@ CREATE (n:Noun {word:"robot"});
 	MATCH (model:Model) WHERE model.alias = "frida"
 		MATCH (noun:Noun) WHERE noun.word = "robot"
 		CREATE (noun)-[:MEANS]->(model);
+MATCH (model:Model) WHERE model.alias = "pcb"
+	CREATE (noun:Noun {word:"pcbs"})
+	CREATE (noun)-[:MEANS]->(model);
 MATCH (model:Model)
 	CREATE (noun:Noun {word:"everything"})
 	CREATE (noun)-[:MEANS]->(model);

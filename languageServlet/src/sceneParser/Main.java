@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,7 +31,7 @@ public class Main {
 	private static NeoDatabase database = NeoDatabase.getDatabase();
 	private static final UnitConverter unitConverter = new UnitConverter();
 	private static final NumberParser numberParser = new NumberParser();
-	private static int nextId = 0;
+	private static int nextId = database.getIdCount();
 
 	public static ArrayList<Command> interpret(Sentence parsedSentence) {
 		ArrayList<Command> commands = new ArrayList<Command>();
@@ -53,52 +54,59 @@ public class Main {
 				}
 			}
 		}
-		boolean shouldExecute = true;
-		for (Command command : commands) {
-			if(command.isNotify()){
-				shouldExecute = false;
-				break;
-			}
-		}
-		if(shouldExecute) for (Command command : commands) {
-			command.execute(database);
-		}
 		return commands;
 	}
 
 	private static ArrayList<Command> makeCreate(Map<String, String> verb, Predicate rootPredicate) {
 		ArrayList<Command> commands = new ArrayList<Command>();
 		Word itemDescription = getArgumentHead(rootPredicate, "A1");
+		createObjects(commands, itemDescription);
+		return commands;
+	}
+	
+	private static int[] createObjects(List<Command> commands, Word itemDescription){
 		String[] possibleModels = appropriateModels(itemDescription);
 		if(possibleModels.length == 0){
 			commands.add(noModelFound);
-			return commands;
+			return new int[0];
 		}
 		if(possibleModels.length > 1){
 			commands.add(tooManyModels);
-			return commands;
+			return new int[0];
 		}
 		int times = 1;
 		if(hasSubtag(itemDescription, "CD")){
-			ArrayList<Word> list = new ArrayList<>();
-			getAllSubtags(list, itemDescription, "CD");
-			Collections.sort(list);
-			String[] nbrs = new String[list.size()];
-			int i = 0;
-			for (Word word: list) {
-				nbrs[i] = word.getLemma();
-				i++;
-			}
-			times = (int) numberParser.parse(nbrs);
+			times = getNumber(itemDescription);
 		}
+		int[] ids = new int[times];
 		int id = -1;
 		for (int i = 0; i < times; i++) {
-			id = getNextId();			
-			commands.add(Command.create(id, possibleModels[0]));
+			id = getNextId();	
+			commands.add(Command.create(database, id, possibleModels[0]));
+			ids[i] = id;
 		}
-		if(times > 1)
+		Map<String, String> mods = extractAdjectives(itemDescription);
+		for (Entry<String, String> mod : mods.entrySet()) {
+			for (int i : ids) {
+				commands.add(Command.modify(database, i, mod.getKey(), mod.getValue()));
+			}
+		}
+		if(times == 1)
 			activeAgentId = id;
-		return commands;
+		return ids;
+	}
+	
+	private static int getNumber(Word itemDescription){
+		ArrayList<Word> list = new ArrayList<>();
+		getAllSubtags(list, itemDescription, "CD");
+		Collections.sort(list);
+		String[] nbrs = new String[list.size()];
+		int i = 0;
+		for (Word word: list) {
+			nbrs[i] = word.getLemma();
+			i++;
+		}
+		return (int) numberParser.parse(nbrs);
 	}
 
 	private static int getNextId() {
@@ -112,7 +120,7 @@ public class Main {
 		Item[] items = identify(itemDescription);
 		if(det == APPLY_ALL){
 			for (Item item : items) {
-				commands.add(Command.remove(item));
+				commands.add(Command.remove(database, item.id));
 			}
 		}else {			
 			if(items.length == 0){
@@ -123,7 +131,7 @@ public class Main {
 				commands.add(tooManyItemsFound);
 				return commands;
 			}
-			commands.add(Command.remove(items[0]));
+			commands.add(Command.remove(database, items[0].id));
 		}
 		activeAgentId = -1;
 		return commands;
@@ -147,19 +155,13 @@ public class Main {
 				commands.add(grammarError);
 				return commands;
 			} case CREATE_TRUE: {
-				String[] possibleModels = appropriateModels(object);
-				if(possibleModels.length == 0){
-					commands.add(noModelFound);
+				int[] ids = createObjects(commands, object);
+				if(ids.length == 0)
 					return commands;
+				items = new Item[ids.length];
+				for (int i = 0; i < ids.length; i++) {
+					items[i] = database.getItem(ids[i]);
 				}
-				if(possibleModels.length > 1){
-					commands.add(tooManyModels);
-					return commands;
-				}
-				int id = getNextId();
-				commands.add(Command.create(id, possibleModels[0]));
-				activeAgentId = id;
-				items = new Item[]{database.getItem(id)};
 				break;
 			} case CREATE_FALSE: {
 				Item[] itemps = identify(object);
@@ -175,6 +177,10 @@ public class Main {
 				break;
 			} case APPLY_ALL: {
 				items = identify(object);
+				if(items.length == 0){
+					commands.add(noItemFound);
+					return commands;
+				}
 				break;
 			}
 		}
@@ -185,14 +191,14 @@ public class Main {
 			if(word.isPred()) {
 				property = database.getProperty(word.getLemma());
 			}
-		}
-		if(property == null){
-			Word adj = getAdjective(rootPredicate);
-			if(adj != null){				
-				adjective = database.getAdjective(adj.getLemma());
-				property = adjective.get("property");
-				function = adjective.get("function");
-				value = adjective.get("value");
+			if(property == null){
+				Word adj = getAdjective(rootPredicate);
+				if(adj != null){				
+					adjective = database.getAdjective(adj.getLemma());
+					property = adjective.get("property");
+					function = adjective.get("function");
+					value = adjective.get("value");
+				}
 			}
 		}
 		if(property.equals("position")){
@@ -206,9 +212,10 @@ public class Main {
 
 				if(value == null){
 					Word w = adj;
+					Iterator<Word> itr = w.getChildren().iterator();
 					do {
-						w = getWord(w.getChildren().iterator().next());
-					}while(!isObject(w));
+						w = getWord(itr.next());
+					}while(!isNoun(w) && itr.hasNext());
 					Item[] refs = identify(w);
 					if(refs.length == 0){
 						commands.add(noItemFound);
@@ -224,14 +231,36 @@ public class Main {
 					for (String posProperty : POSITIONS) {
 						if(posProperty.equals(property)){
 							value = "1";
-						}else{							
-							commands.add(Command.modify(items[0], posProperty, ref.get(posProperty)));
+						}else{
+							for (Item item : items) {								
+								commands.add(Command.modify(database, item.id, posProperty, ref.get(posProperty)));
+							}
 						}
 					}
 				}
+			}else{
+				Word dir = getArgumentHead(rootPredicate, "AM-DIR");
+				Word unit = null;
+				if(dir == null){
+					dir = getArgumentHead(rootPredicate, "AM-TMP");
+					if(dir == null){
+						
+					}
+					unit = dir.getLeftmostDep();
+				}else{
+					unit = getArgumentHead(rootPredicate, "AM-EXT");
+				}
+				adjective = database.getAdjective(dir.getLemma());
+				property = adjective.get("property");
+				function = adjective.get("function");
+				value = adjective.get("value");
+				
+				if(unit != null && unitConverter.isUnit(unit.getLemma())) {
+					double nbr = getNumber(unit);
+					nbr = unitConverter.convert(nbr, unit.getLemma());
+					value = Double.toString(nbr);
+				}
 			}
-			
-			
 		}
 		if(value == null){
 			if(function == null)
@@ -249,17 +278,16 @@ public class Main {
 			}
 		}
 		
+		if(property == null || value == null){
+			commands.add(grammarError);
+			return commands;
+		}	
 		for (Item item : items) {
 			String objectValue = item.get(property);
 			if(objectValue == null && !property.equals("name") && !property.equals("model")){
 				commands.add(illegalProperty);
 				return commands;
 			}
-			
-			if(property == null || value == null){
-				commands.add(grammarError);
-				return commands;
-			}	
 		}
 		//Exceptions are not allowed to be thrown between this comment and return
 		for (Item item : items) {
@@ -272,11 +300,13 @@ public class Main {
 					referenceValue = referenceObjects[0].get(property);
 				}
 				value = applyFunction(function, value, objectValue, referenceValue);
-				commands.add(Command.modify(item, property, value));
+				commands.add(Command.modify(database, item.id, property, value));
 			}
 		}
-		
-		activeAgentId = items[0].id;
+		if(items.length == 1)
+			activeAgentId = items[0].id;
+		else
+			activeAgentId = -1;
 		return commands;
 	}
 	
@@ -302,13 +332,13 @@ public class Main {
 			Predicate predicate = (Predicate) word;
 			word = getArgumentHead(predicate, "A1");
 		}
-		while(!isObject(word) && word.getChildren().size() == 1){
+		while(!isNoun(word) && word.getChildren().size() == 1){
 			word = word.getChildren().toArray(new Word[0])[0];
 		}
 		return word;
 	}
 	
-	private static boolean isObject(Word word) {
+	private static boolean isNoun(Word word) {
 		switch(word.getPOS()){
 			case "NN":
 			case "NNS":
@@ -412,6 +442,15 @@ public class Main {
 		return words;
 	}
 	
+	public static List<Word> getSubtagsByDeprel(Word item, String deprel) {
+		List<Word> list = new ArrayList<>();
+		for (Word word : item.getChildren()) {
+			if(word.getDeprel().equals(deprel))
+				list.add(word);
+		}
+		return list;
+	}
+	
 	public static final int CREATE_NO_TAG = 0;
 	public static final int CREATE_TRUE = 1;
 	public static final int CREATE_FALSE = 2;
@@ -426,9 +465,12 @@ public class Main {
 		List<String> dts = getSubtags(item, "DT");
 		if(dts.size() > 1)
 			return CREATE_NO_TAG;
-		else if (dts.size() < 1)
-			return CREATE_FALSE;
-		switch(dts.get(0)){
+		else if (dts.size() < 1){
+			if(hasSubtag(item, "CD"))
+				return CREATE_TRUE;
+			else
+				return CREATE_FALSE;
+		} switch(dts.get(0)){
 			case "a":
 			case "an":
 			case "another":
@@ -518,7 +560,7 @@ public class Main {
 	
 	/**@return All words with matching <code>tag</code> from all levels beneath <code>item</code>.*/
 	private static void getAllNames(List<String> values, Word word) {
-		if(word.getPOS().equals("NNP")) {
+		if(word.getPOS().equals("NNP") || word.getPOS().equals("NN")) {
 			values.add(word.getLemma());
 		}
 		for(Word child : word.getChildren()) {
@@ -563,5 +605,4 @@ public class Main {
 		
 		return result.toArray(t);
 	}
-
 }

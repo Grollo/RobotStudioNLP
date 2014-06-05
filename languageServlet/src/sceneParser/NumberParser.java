@@ -4,13 +4,16 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-/**@author Hampus Mauritzon (2014)
+/**Parses numbers, both numerical and texted numbers. 
+ * Can at moment only handle positive Integers.
  * 
- * Can at moment only handle Integers.*/
+ * @author Hampus Mauritzon (2014)*/
 public class NumberParser {
 	
 	private static Map<String, Double> baseNumbers = new HashMap<>();
 	
+	/**@param number - A array of texted numerical terms in order
+	 * OR a numerical number.*/
 	public double parse(String[] number) {
 		if(number.length < 2) try	{ 
 			return Double.parseDouble(number[0]);
@@ -21,33 +24,45 @@ public class NumberParser {
 	}
 	
 	private double literalNumber(String[] number){
-		LinkedList<Double> stack = new LinkedList<>();
+		LinkedList<Container> stack = new LinkedList<>();
 		for (String string : number) {
 			double c = baseNumbers.get(string);
-			double orderC = getOrder(c);
-			Double top = stack.peek();
-			if(stack.isEmpty() || orderC < getOrder(top)){
-				stack.push(c);
+			int orderC = getOrder(c);
+			Container top = stack.peek();
+			if(stack.isEmpty() || orderC < top.order){
+				stack.push(new Container(c, orderC));
 			}else{
 				double sum = 0;
 				do {
-					sum += stack.pop();
-				}while(!stack.isEmpty() && getOrder(stack.peek()) < orderC);
+					sum += stack.pop().number;
+				}while(!stack.isEmpty() && stack.peek().order < orderC);
 				sum *= c;
-				stack.push(sum);
+				stack.push(new Container(sum, orderC));
 			}
 		}
 		
 		double sum = 0;
 		while(!stack.isEmpty())
-			sum += stack.pop();
+			sum += stack.pop().number;
 		
 		return sum;
 	}
 	
-	/**Handles all doubles*/
+	/**Handles all doubles bigger than 0.*/
 	private static int getOrder(double number){
 		return (int) StrictMath.floor(StrictMath.log10(number));
+	}
+	
+	/**Exists to not cause composite numbers to gain increased order.
+	 * And to (maybe) decrease computation time.*/
+	private static class Container {
+		public double number;
+		public int order;
+		
+		public Container(double number, int order){
+			this.number = number;
+			this.order = order;
+		}
 	}
 	
 	public NumberParser(){

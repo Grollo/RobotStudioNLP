@@ -1,58 +1,13 @@
 package neo4j;
 
-import java.util.List;
 import java.util.Map;
 
 import sceneParser.Item;
 
 public interface Database {
 
-	/** Adds a verb to the database.
-	 * 
-	 * @param verb - the verb to be added.
-	 * @param action - the action connected to this verb.
-	 * @return <code>true</code> if the verb was added to the database. Else returns <code>false</code>.
-	 */
-	public boolean addVerb(String verb, String action);
-	
-	/**Adds a argument to a verb.
-	 * 
-	 * @param verb - the verb itself.
-	 * @param argument
-	 * @param reference - reference to be mapped to argument.
-	 * @return <code>true</code> if the database change was successful. Else returns <code>false</code>.
-	 */
-	public boolean addArgument(String verb, String argument, String reference);
-	
-	/** Adds a adjective to the database.
-	 * 
-	 * @param adjective - the adjective to be added.
-	 * @param property - the property of this adjective.
-	 * @param value - the value of this adjective.
-	 * @return <code>true</code> if the adjective was added to the database. Else returns <code>false</code>.
-	 */
-	public boolean addAdjective(String adjective, String property, String value);
-	
-	/** Adds a new model to the database.
-	 * 
-	 * @return <code>true</code> if the model was added to the database. Else returns <code>false</code>.
-	 */
-	public boolean addModel(String alias, String filename);
-
-	/** Adds a new noun to the database.
-	 * 
-	 * @return <code>true</code> if the noun was added to the database. Else returns <code>false</code>.
-	 */
-	public boolean addNoun(String noun);
-	
-	/** Adds a relationship between a word and a model.
-	 * 
-	 * @param word - the word to be linked.
-	 * @param model - the alias of the model to be linked.
-	 * @return <code>false</code> if the word or the model isn't uniquely identifiable.
-	 * 		Else returns <code>true</code>.
-	 */
-	public boolean linkModel(String word, String model);
+	/**@return The smallest non negative id-value such that no item in the database has a larger id.*/
+	public int getIdCount();
 	
 	/** Creates a new item in the database.
 	 * 

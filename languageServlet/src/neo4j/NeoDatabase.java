@@ -32,60 +32,21 @@ public class NeoDatabase implements Database{
 		return database;
 	}
 	
-	public boolean addVerb(String verb, String action){
+	public int getIdCount(){
 		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("$verb", verb);
-		params.put("$action", action);
-		engine.query(
-				"CREATE (v:Verb {word:{$verb}, does:{$action}});", params);
-		return true;
-	}
-
-	public boolean addArgument(String verb, String argument, String reference) {
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("$verb", verb);
-		params.put("$arg", argument);
-		params.put("$value", reference);
-		engine.query(
-				"MATCH (v:Verb) WHERE v.word = {$verb} SET v.{$arg} = {$value};", params);
-		return true;
-	}
-	
-	public boolean addAdjective(String adjective, String property, String value){
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("$adj", adjective);
-		params.put("$property", property);
-		params.put("$value", value);
-		engine.query(
-				"CREATE (a:Adjective {word:{$adj}, property:{$property}, value:{$value}});", params);
-		return true;
-	}
-
-	public boolean addModel(String alias, String filename) {
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("$alias", alias);
-		params.put("$filename", filename);
-		engine.query(
-				"CREATE (m:Model {alias:{$alias}, filename:{$filename}});", params);
-		return true;
-	}
-
-	public boolean addNoun(String noun) {
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("$word", noun);
-		engine.query(
-				"CREATE (n:Noun {word:{$word}});", params);
-		return true;
-	}
-
-	public boolean linkModel(String word, String model) {
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("$word", word);
-		params.put("$alias", model);
-		engine.query(
-				"MATCH (n:Noun), (m:Model) WHERE n.word = {$word} AND m.alias = {$alias} " +
-				"CREATE (n)-[:MEANS]->(m);", params);
-		return true;
+		QueryResult<Map<String, Object>> result = engine.query(
+				  "MATCH (i:Item) "
+				+ "RETURN i "
+				+ "ORDER BY i.id "
+				+ "DESC LIMIT 1;", params);
+		RestNode node = null;
+		for (Map<String, Object> map2 : result) {
+			Object o = map2.get("i");
+			node = (RestNode) o;
+		}
+		if(node == null)
+			return 0; 
+		return 1 + (int) node.getProperty("id");
 	}
 
 	public boolean createItem(int id, String model) {
